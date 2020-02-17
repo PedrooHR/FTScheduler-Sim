@@ -4,5 +4,7 @@
 !.gitignore
 *.o
 *.exe
+*.txt
+*.cfg
 fcfs/resultados
 scheduler/resultados

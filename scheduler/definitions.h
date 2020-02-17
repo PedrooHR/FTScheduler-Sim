@@ -16,56 +16,56 @@
 //////////////////////////////////////////////////////////
 
 //System definitions
-#define MONITOR_TIME    5*60    // time in seconds to the system monitor sensors and network
-#define FDETECTOR_TIME  1*60    // time in seconds to the system detects if there are machines with fault
+#define MONITOR_TIME    5*60            // time in seconds to the system monitor sensors and network
+#define FDETECTOR_TIME  1*60            // time in seconds to the system detects if there are machines with fault
 
 //R threshold definitions
-#define R_MEAN          1       // calculates R threshold by the mean of all tasks' datainputs size
-#define R_MEDIAN        2       // calculates R threshold by the median of all tasks' datainputs size
-#define R_LQUARTILE     3       // calculates R threshold by the first quartile of all tasks' datainputs size
-#define R_HQUARTILE     4       // calculates R threshold by the third quartile of all tasks' datainputs size
+#define R_MEAN          1               // calculates R threshold by the mean of all tasks' datainputs size
+#define R_MEDIAN        2               // calculates R threshold by the median of all tasks' datainputs size
+#define R_LQUARTILE     3               // calculates R threshold by the first quartile of all tasks' datainputs size
+#define R_HQUARTILE     4               // calculates R threshold by the third quartile of all tasks' datainputs size
 
 //Machines Order Definition
-#define MRLP    1               // sort machines by more reliability and then by less processing
-#define MRMP    2               // sort machines by more reliability and then by more processing
+#define MRLP    1                       // sort machines by more reliability and then by less processing
+#define MRMP    2                       // sort machines by more reliability and then by more processing
 
 //Machines Status Definition
-#define MACHINE_DOWN        0   // when a machine fails
-#define MACHINE_TURNEDOFF   1   // nn case we already now that machine failed
-#define MACHINE_AVAILABLE   2   // when a machine is available
-#define MACHINE_BUSY        3   // when a machine is executing a task
+#define MACHINE_DOWN        0           // when a machine fails
+#define MACHINE_TURNEDOFF   1           // nn case we already now that machine failed
+#define MACHINE_AVAILABLE   2           // when a machine is available
+#define MACHINE_BUSY        3           // when a machine is executing a task
 
 //Machines Type Definition
-#define MACHINE_NORMAL  1       // defines that the machine is standard
-#define MACHINE_SPOT    2       // defines that the machines is spot
-#define SPOT_DELAY      60      // defines the time to provide a spot machine (in seconds)
+#define MACHINE_NORMAL  1               // defines that the machine is standard
+#define MACHINE_SPOT    2               // defines that the machines is spot
+#define SPOT_DELAY      60              // defines the time to provide a spot machine (in seconds)
 
 //Machines HDD Speed
-#define HDD_WRITE_SPEED 500     // defines the HDD speed for checkpoints in MB/s, value determined according to AWS 
-                                // general purpose HDD for writing not frequently large files (checkpoints) with less cost
+#define HDD_WRITE_SPEED 500             // defines the HDD speed for checkpoints in MB/s, value determined according to AWS 
+                                        // general purpose HDD for writing not frequently large files (checkpoints) with less cost
 
 //Tasks Status Definition
-#define TASK_NOTREADY   0       // when a task still have dependencies
-#define TASK_READY      1       // when a task has no more dependencies and can be executed
-#define TASK_RUNNING    2       // when a task is running
-#define TASK_COMPLETED  3       // when a task is successfully completed
+#define TASK_NOTREADY   0               // when a task still have dependencies
+#define TASK_READY      1               // when a task has no more dependencies and can be executed
+#define TASK_RUNNING    2               // when a task is running
+#define TASK_COMPLETED  3               // when a task is successfully completed
 
 //Events Definition
-#define EVENT_CHECKPOINT    1   // when a machine will execute a checkpoint 
-#define EVENT_FINISHTASK    2   // when a machine finishes a task
-#define EVENT_TASKSTART     3   // when a machine will start a task
-#define EVENT_FAULT         4   // when a fault occurs
-#define EVENT_NETWORKREPAIR 5   // when the network fault will be recovered
-#define EVENT_SENSORSREPAIR 6   // when the sensors fault will be recovered
-#define EVENT_SYSMONITOR    7   // periodically event to monitor system network and sensors
-#define EVENT_FAULTDETECTOR 8   // periodically event that detects when a fault has occurred
+#define EVENT_CHECKPOINT    1           // when a machine will execute a checkpoint 
+#define EVENT_FINISHTASK    2           // when a machine finishes a task
+#define EVENT_TASKSTART     3           // when a machine will start a task
+#define EVENT_FAULT         4           // when a fault occurs
+#define EVENT_NETWORKREPAIR 5           // when the network fault will be recovered
+#define EVENT_SENSORSREPAIR 6           // when the sensors fault will be recovered
+#define EVENT_SYSMONITOR    7           // periodically event to monitor system network and sensors
+#define EVENT_FAULTDETECTOR 8           // periodically event that detects when a fault has occurred
 
 //Faults Definition 
-#define FAULT_MACHINEDOWN   1
-#define FAULT_SENSORS       2
-#define FAULT_NETWORK       3
-#define NETWORK_REPAIR      247*60
-#define SENSORS_REPAIR      342*60
+#define FAULT_MACHINEDOWN   1           // when a fault occurs and machine goes down
+#define FAULT_SENSORS       2           // when a change in sensors occurs on a machine
+#define FAULT_NETWORK       3           // when a change in network occurs on a machine
+#define NETWORK_REPAIR      247*60      // avg time till repair network, accordingly to article
+#define SENSORS_REPAIR      342*60      // avg time till repair sensors, accordingly to article
 
 
 //////////////////////////////////////////////////////////
@@ -198,10 +198,10 @@ public:
     std::vector <Task *> G; //Dependency Graph
     std::vector <Machine *> Machines;
     std::vector <Machine *> Machines_S;
+    int TasksToComplete;
     int MachinesAvailable;
     int NextSpot;
     int NextNormal;
-    int TasksToComplete;
     int MachinesUp;
 
     Task * getTaskByID(int taskid);

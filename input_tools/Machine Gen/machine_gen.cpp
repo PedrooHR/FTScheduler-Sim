@@ -1,25 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
 #include <time.h>
+#include <string>
 
 using namespace std;
 
-int main(){
+int main(int argc, char * argv[]){
     int N;
     FILE * p;
-    N = 50;
+    N = stoi(argv[1]);
+    string dpath(argv[2]);
+    string path = dpath + "_m.txt";
 
-    p = fopen("50machines.cfg", "a+");
+    p = fopen(path.c_str(), "w+");
 
     fprintf(p, "%d\n", N);
 
     srand(time(NULL));
 
     for (int i = 0; i < N; i++){
-        int cp_speed = 200 + rand() % 50;
+
         float e_coef = (100 - rand() % 20) / 100.0;
 
-        fprintf(p, "%f %d \n", e_coef, cp_speed);
+        fprintf(p, "%f  \n", e_coef);
     }
 
     fclose(p);

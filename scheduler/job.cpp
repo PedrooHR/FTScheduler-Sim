@@ -116,6 +116,11 @@ void Job::ReadMachines(std::string JobString){
         Machines.push_back(machine);
     }
 
+    MachinesAvailable = number_of_machines;
+    MachinesUp = number_of_machines;
+    NextSpot = 0;
+    NextNormal = number_of_machines;
+
     fclose(machinefile);
 }
 

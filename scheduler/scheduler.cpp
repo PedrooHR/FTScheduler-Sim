@@ -53,21 +53,30 @@ std::vector <Machine *> Scheduler::Provide(int Number) { //Provides Spot Machine
     return machines;
 }
 
-int Scheduler::assign(Task * NextTask, std::vector <Machine *> machines) {
+int Scheduler::assign(Task * NextTask, std::vector <Machine *> machines) { 
+    //std::cout << "Task " << NextTask->id <<  " will be assigned to machines\n";
     int pending = config.Theta - NextTask->Instances.size();
-    if (NextTask->Checkpointable == true) {
-        for (int i = 0; i < machines.size(); i++){
-            Event * event = new Event();
-            event->type = EVENT_TASKSTART;
-            event->info = NextTask->id + " " + machines[i]->id;
-            if (machines[i]->type == MACHINE_SPOT) {
-                event->time = GLOBAL_TIMER + SPOT_DELAY;
-            } else {
-                event->time = GLOBAL_TIMER;
-            }
-            eventhandler->AddEvent(event);
-            pending--;
+    for (int i = 0; i < machines.size(); i++){
+        //Task 
+        NextTask->status = TASK_RUNNING;
+        NextTask->Instances.push_back(machines[i]);
+
+        //Machine
+        machines[i]->status = MACHINE_BUSY;
+        machines[i]->TaskExecuting = NextTask;
+        job->MachinesAvailable--;
+        
+        Event * event = new Event();
+        event->type = EVENT_TASKSTART;
+        event->info = std::to_string(NextTask->id) + " " + machines[i]->id + " ";
+        if (machines[i]->type == MACHINE_SPOT) {
+            event->time = GLOBAL_TIMER + SPOT_DELAY;
+        } else {
+            event->time = GLOBAL_TIMER;
         }
+        
+        eventhandler->AddEvent(event);
+        pending--;
     }
     return pending;
 }
@@ -78,12 +87,12 @@ bool SortByMRLP (Machine * left, Machine * right) {
         return true;
     } else if (left->cs < right->cs) {
         return false;
-    } else {
-        if (left->cp < right->cp) {
-            true;
-        } else {
-            false;
-        }
+    }
+    
+    if (left->cp < right->cp) {
+        return true;
+    } else if (left->cp >= right->cp) {
+        return false;
     }
 }
 
@@ -92,12 +101,12 @@ bool SortByMRMP (Machine * left, Machine * right) {
         return true;
     } else if (left->cs < right->cs) {
         return false;
-    } else {
-        if (left->cp < right->cp) {
-            false;
-        } else {
-            true;
-        }
+    }
+    
+    if (left->cp > right->cp) {
+        return true;
+    } else if (left->cp <= right->cp) {
+        return false;
     }
 }
 
@@ -174,8 +183,9 @@ void Scheduler::CheckRedundancy() {
     //Sort Running Tasks by Instances Size
     std::sort(RunningTasks.begin(), RunningTasks.end(), SortByInstancesSize);
     int i = 0, stop = 0;
+
     while (job->MachinesAvailable > 0 && stop < RunningTasks.size()){
-        stop = 1;
+        
         if (RunningTasks[i]->Instances.size() < config.Theta){
             std::vector <Machine *> machines = getNextMachine(MRLP);
             assign(RunningTasks[i], machines);
@@ -193,6 +203,7 @@ void Scheduler::CheckTask(Task * NextTask) {
         assign(NextTask, machines);
     } else {
         NextTask->Checkpointable = false;
+        
         std::vector <Machine *> Instances = getNextMachine(MRMP, config.Theta);
         if (Instances[0]->cs < config.Gamma) {
             Task * subsequenttask = P_Queue.top(); //get the next task
@@ -218,11 +229,13 @@ void Scheduler::CheckTask(Task * NextTask) {
 
 void Scheduler::RunNextTasks() {
     CheckPendingRedundancy();
+    
     while (P_Queue.empty() == false && job->MachinesAvailable > 0) {
         Task * NextTask = P_Queue.top(); // get first task in the queue
         P_Queue.pop(); // Remove the task from queue
         CheckTask(NextTask);
     } 
+
     if (job->MachinesAvailable > 0) {
         CheckRedundancy();
     }
@@ -290,6 +303,12 @@ void Scheduler::StartScheduler() {
     monitor->type = EVENT_SYSMONITOR;
     monitor->time = 0;
     eventhandler->AddEvent(monitor);
+
+    //Add The First Fault Detection Event
+    Event * detector = new Event();
+    detector->type = EVENT_FAULTDETECTOR;
+    detector->time = 0;
+    eventhandler->AddEvent(detector);
 
     //Call to the auxiliary Function to determine R threshold
     RCalc(RFactor);
