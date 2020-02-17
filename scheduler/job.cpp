@@ -1,4 +1,5 @@
-#include "job.h"
+//#include "job.h"
+#include "definitions.h"
 
 /* Machine Part */
 Machine::Machine() {
@@ -14,8 +15,8 @@ Task::Task() {
 /* Job methods  */
 //aux method to calculate dependents
 
-Task * getTaskByID(int taskid){
-    for (int i = 0; i < G->size(); i++){
+Task * Job::getTaskByID(int taskid){
+    for (int i = 0; i < G.size(); i++){
         if (G[i]->id == taskid){
             return G[i];
             break;
@@ -23,9 +24,9 @@ Task * getTaskByID(int taskid){
     }
 }
 
-Task * getTaskByID(std::string machineid){
-    for (int i = 0; i < Machines->size(); i++){
-        if (Machines[i]->id.compare(machineid)){
+Machine * Job::getMachineByID(std::string machineid){
+    for (int i = 0; i < Machines.size(); i++){
+        if (Machines[i]->id.compare(machineid) == 0){
             return Machines[i];
             break;
         }
@@ -34,8 +35,8 @@ Task * getTaskByID(std::string machineid){
 
 void Job::ReadGraph(std::string JobString){
     std::string datapath = JobString + ".txt";
-    std::string deppath = JobString + ".cfg"
-    FILE * taskdata, taskdep;
+    std::string deppath = JobString + ".cfg";
+    FILE * taskdata, * taskdep;
     
     taskdata = fopen(datapath.c_str(), "r+");
     taskdep = fopen(deppath.c_str(), "r+");
@@ -48,10 +49,10 @@ void Job::ReadGraph(std::string JobString){
     for (int i = 0; i < NumberOfTasks; i++) {
         Task * task = new Task();
         int output;
-        char name[];
+        char name[50];
 
         fscanf(taskdata, "%d", &task->id);
-        fscanf(taskdata, "%s", &name;
+        fscanf(taskdata, "%s", name);
         fscanf(taskdata, "%d", &task->TaskTime);
         fscanf(taskdata, "%d", &task->S);
         fscanf(taskdata, "%d", &output);
@@ -60,7 +61,8 @@ void Job::ReadGraph(std::string JobString){
         task->PendingRed = false;
         task->Checkpointable = false;
         task->LastValidCP = 0;
-        task->Dependencies.clear();
+        task->StartTime = -1;
+        task->dependencies.clear();
         task->dependents.clear();
         task->Instances.clear();
 
@@ -68,7 +70,7 @@ void Job::ReadGraph(std::string JobString){
         task->TimeToCheckpoint = task->S / HDD_WRITE_SPEED;
         task->NumberOfCheckpoints = task->TaskTime / task->TimeToCheckpoint;
 
-        G->push_back(task);
+        G.push_back(task);
     }
 
     for (int i = 0; i < NumberOfTasks; i++){
@@ -92,7 +94,7 @@ void Job::ReadGraph(std::string JobString){
 }
 
 void Job::ReadMachines(std::string JobString){
-    std::string machinespath = JobString + "_m.txt"
+    std::string machinespath = JobString + "_m.txt";
     FILE * machinefile;
 
     machinefile = fopen(machinespath.c_str(), "r+");

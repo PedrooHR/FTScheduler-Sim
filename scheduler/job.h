@@ -1,7 +1,4 @@
-#ifndef JOB_H_INCLUDED
-#define JOB_H_INCLUDED
-
-/* Job includes all files related to the job, like the dependecy graph, the machines configuration and the probabilistic configuration */
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,25 +8,34 @@
 #include <time.h>
 #include <string>
 
-extern long int TOTAL_TASK_TIME;
-extern long int TOTAL_REDUNDANCY;
-
 //Machines Order Definition
-#define MRLP    1
-#define MRMP    2
+#define MRLP    1               // sort machines by more reliability and then by less processing
+#define MRMP    2               // sort machines by more reliability and then by more processing
 
 //Machines Status Definition
-#define MACHINE_DOWN        1
-#define MACHINE_AVAILABLE   2
-#define MACHINE_BUSY        3
+#define MACHINE_DOWN        0   // when a machine fails
+#define MACHINE_TURNEDOFF   1   // nn case we already now that machine failed
+#define MACHINE_AVAILABLE   2   // when a machine is available
+#define MACHINE_BUSY        3   // when a machine is executing a task
 
 //Machines Type Definition
-#define MACHINE_NORMAL  1
-#define MACHINE_SPOT    2   
-#define SPOT_DELAY      60
+#define MACHINE_NORMAL  1       // defines that the machine is standard
+#define MACHINE_SPOT    2       // defines that the machines is spot
+#define SPOT_DELAY      60      // defines the time to provide a spot machine (in seconds)
 
 //Machines HDD Speed
-#define HDD_WRITE_SPEED 500
+#define HDD_WRITE_SPEED 500     // defines the HDD speed for checkpoints in MB/s, value determined according to AWS 
+                                // general purpose HDD for writing not frequently large files (checkpoints) with less cost
+
+//Tasks Status Definition
+#define TASK_NOTREADY   0       // when a task still have dependencies
+#define TASK_READY      1       // when a task has no more dependencies and can be executed
+#define TASK_RUNNING    2       // when a task is running
+#define TASK_COMPLETED  3       // when a task is successfully completed
+
+// Foward Declaration
+class Machine;
+class Task;
 
 /* Machines info */
 class Machine {
@@ -55,12 +61,6 @@ public:
     Machine();
 };
 
-//Tasks Status Definition
-#define TASK_NOTREADY   0
-#define TASK_READY      1
-#define TASK_RUNNING    2
-#define TASK_COMPLETED  3 
-
 /* Task takes all information about tasks */
 class Task {
 public:
@@ -79,7 +79,9 @@ public:
     bool PendingRed;
     bool Checkpointable; //True if task will do checkpoint
     int LastValidCP; //last valid checkpoint
-    std::vector <Machines *> Instances;
+    int auxDependentMapping; // Auxiliary variable for DoD Calculus
+    std::vector <Machine *> Instances;
+    long long int StartTime;
     
     //Task Constructors
     Task();
@@ -91,7 +93,6 @@ public:
     std::vector <Task *> G; //Dependency Graph
     std::vector <Machine *> Machines;
     std::vector <Machine *> Machines_S;
-    std::vector <std::pair <int, int> > faults;
     int MachinesAvailable;
     int NextSpot;
     int NextNormal;
@@ -106,6 +107,3 @@ public:
     
     Job(std::string JobString);
 };
-
-
-#endif // JOB_H_INCLUDED

@@ -1,0 +1,8 @@
+*
+!*/
+!*.*
+!.gitignore
+*.o
+*.exe
+fcfs/resultados
+scheduler/resultados
