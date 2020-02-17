@@ -1,0 +1,5 @@
+      3920 ->  Machine_9 Fault - 0.002628
+     10040 -> Machine_11 Fault - 0.002051
+     11300 -> Machine_24 Fault - 0.001626
+     41960 -> Machine_73 Fault - 0.000238
+     95540 ->  Machine_4 Fault - 0.004896

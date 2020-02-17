@@ -1,0 +1,3 @@
+     51180 -> Machine_95 Fault - 0.000659
+     54560 -> Machine_24 Fault - 0.002340
+     75260 ->  Machine_7 Fault - 0.001614

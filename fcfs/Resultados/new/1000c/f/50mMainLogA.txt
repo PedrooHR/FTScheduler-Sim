@@ -1,0 +1,6 @@
+     35960 ->  Machine_3 Fault - 0.005623
+    229020 ->  Machine_4 Fault - 0.005176
+    255340 -> Machine_35 Fault - 0.005322
+    279860 -> Machine_15 Fault - 0.002317
+    371540 -> Machine_48 Fault - 0.005687
+    375800 -> Machine_48 Fault - 0.001905

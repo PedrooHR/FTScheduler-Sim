@@ -1,0 +1,2 @@
+     33720 -> Machine_92 Fault 
+    133140 -> Machine_76 Fault 

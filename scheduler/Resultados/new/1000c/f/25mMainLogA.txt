@@ -1,0 +1,2 @@
+    299780 -> Machine_11 Fault - 0.000347
+    386720 -> Machine_13 Fault - 0.000966

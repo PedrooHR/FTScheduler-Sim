@@ -1,0 +1,8 @@
+      4260 -> Machine_24 Fault 
+     34260 -> Machine_33 Fault 
+     43980 -> Machine_31 Fault 
+     43980 -> Machine_43 Fault 
+     78840 -> Machine_34 Fault 
+7185.670000
+90220
+7972940

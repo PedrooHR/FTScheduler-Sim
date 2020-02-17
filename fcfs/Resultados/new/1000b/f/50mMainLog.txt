@@ -1,0 +1,9 @@
+     47340 ->  Machine_4 Fault 
+     71520 ->  Machine_6 Fault 
+     92100 -> Machine_29 Fault 
+    301260 -> Machine_41 Fault 
+    347160 -> Machine_25 Fault 
+    364860 -> Machine_42 Fault 
+143920.000000
+426600
+11940980

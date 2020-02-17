@@ -1,0 +1,4 @@
+     21860 ->  Machine_5 Fault - 0.001560
+     25520 -> Machine_78 Fault - 0.001644
+     47120 -> Machine_95 Fault - 0.001488
+     48560 -> Machine_13 Fault - 0.003471

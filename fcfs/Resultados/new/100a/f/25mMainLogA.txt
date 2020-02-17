@@ -1,0 +1,4 @@
+      1720 ->  Machine_6 Fault 
+      5420 -> Machine_15 Fault 
+     63220 -> Machine_24 Fault 
+     76880 -> Machine_17 Fault 

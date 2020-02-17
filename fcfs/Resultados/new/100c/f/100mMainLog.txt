@@ -1,0 +1,6 @@
+     51180 -> Machine_95 Fault 
+     54600 -> Machine_24 Fault 
+     75300 ->  Machine_7 Fault 
+7193.720000
+76460
+6796400

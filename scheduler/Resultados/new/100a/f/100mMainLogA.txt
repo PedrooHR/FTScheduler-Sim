@@ -1,0 +1,2 @@
+     72660 ->  Machine_4 Fault 
+     75560 -> Machine_19 Fault 

@@ -1,0 +1,26 @@
+     13920 ->  Machine_6 Fault 
+     20160 -> Machine_45 Fault 
+     30840 -> Machine_91 Fault 
+     46860 -> Machine_34 Fault 
+     83580 -> Machine_53 Fault 
+     97800 -> Machine_96 Fault 
+    103920 -> Machine_63 Fault 
+    108000 -> Machine_10 Fault 
+    119040 -> Machine_83 Fault 
+    120360 -> Machine_55 Fault 
+    120960 -> Machine_87 Fault 
+    121080 -> Machine_14 Fault 
+    126060 -> Machine_60 Fault 
+    126600 ->  Machine_0 Fault 
+    127380 ->  Machine_7 Fault 
+    135060 -> Machine_32 Fault 
+    164100 -> Machine_92 Fault 
+    168240 -> Machine_31 Fault 
+    183420 -> Machine_30 Fault 
+    212040 -> Machine_69 Fault 
+    222060 -> Machine_62 Fault 
+    269100 -> Machine_78 Fault 
+    420300 -> Machine_43 Fault 
+71914.060000
+461300
+30507600
