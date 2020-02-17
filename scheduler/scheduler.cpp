@@ -1,4 +1,3 @@
-//#include "scheduler.h"
 #include "definitions.h"
 
 bool PQCompare::operator() (const Task * left, const Task * right) const {

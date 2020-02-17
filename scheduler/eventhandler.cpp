@@ -1,4 +1,3 @@
-//#include "eventhandler.h"
 #include "definitions.h"
 
 long long int GLOBAL_TIMER = 0;

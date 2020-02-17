@@ -1,19 +1,12 @@
-//#include "job.h"
 #include "definitions.h"
 
-/* Machine Part */
 Machine::Machine() {
 
 }
 
-/* Task Part */
-
 Task::Task() {
 
 }
-
-/* Job methods  */
-//aux method to calculate dependents
 
 Task * Job::getTaskByID(int taskid){
     for (int i = 0; i < G.size(); i++){
