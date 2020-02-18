@@ -1,2 +1,0 @@
-     87980 ->  Machine_5 Fault - 0.005396
-    169340 ->  Machine_2 Fault - 0.003973

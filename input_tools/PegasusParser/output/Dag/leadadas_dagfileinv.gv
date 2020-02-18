@@ -1,0 +1,8 @@
+digraph {
+	arps2wrf -> wrf ;
+	tpp -> lbi ;
+	tpp -> ai ;
+	lbi -> arps2wrf ;
+	ai -> arps2wrf ;
+	wrfstatic -> arps2wrf ;
+}

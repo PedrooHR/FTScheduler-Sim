@@ -77,7 +77,7 @@ void mountjob(string line){
         int curr = lline.find(' ', prev);
         string preamble = lline.substr(prev+1, curr - prev - 1);
         if (strcmp("/job>", preamble.c_str()) == 0){
-            datafile << TaskIds[idstr] << " " << idstr << " " << rt << " " << inputsize << " " << outputsize << '\n';
+            datafile << TaskIds[idstr] << " " << idstr << " " << abs(rt) << " " << max((long int)1, inputsize / (1024 * 1024)) << " " << max((long int)1, outputsize / (1024 * 1024)) << '\n';
             return;
         } else {
             id = lline.find("link=");
@@ -108,8 +108,8 @@ int main (int argc, char * argv[]) {
         string line;
         path = path.substr(0, path.size()-4);
         inputfile.open(path+".xml");
-        datafile.open("output/Datafiles/"+path+"_taskinfo.txt");
-        datafilecfg.open("output/Datafiles/"+path+"_taskinfo.cfg");
+        datafile.open("output/Datafiles/"+path+".txt");
+        datafilecfg.open("output/Datafiles/"+path+".cfg");
         dagfile.open("output/Dag/"+path+"_dagfile.gv");
         dagfile << "digraph {" << "\n";
         dagfileinv.open("output/Dag/"+path+"_dagfileinv.gv");

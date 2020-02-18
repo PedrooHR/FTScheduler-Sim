@@ -25,6 +25,8 @@ int Scheduler::GetDependents(Task * curr_node, int Mark){
 }
 
 void Scheduler::Initialize() {
+    long long int TotalTime = 0;//Auxiliary to see task total time
+
     for (int i = 0; i < job->G.size(); i++) {
         int total = GetDependents(job->G[i], i);
         job->G[i]->DoD = total;
@@ -32,7 +34,11 @@ void Scheduler::Initialize() {
             job->G[i]->status = TASK_READY;
             P_Queue.push(job->G[i]);
         }
+        TotalTime += job->G[i]->TaskTime;
     }
+    eventhandler->logging.open("EventLog.txt", std::ofstream::app);
+    eventhandler->logging << "SumTaskTimes=" << TotalTime << "\n";
+    eventhandler->logging.close();
 }
 
 std::vector <Machine *> Scheduler::Provide(int Number) { //Provides Spot Machines
@@ -54,7 +60,8 @@ std::vector <Machine *> Scheduler::Provide(int Number) { //Provides Spot Machine
 }
 
 int Scheduler::assign(Task * NextTask, std::vector <Machine *> machines) { 
-    //std::cout << "Task " << NextTask->id <<  " will be assigned to machines\n";
+    if (NextTask->status == TASK_COMPLETED)
+        return 0;
     int pending = config.Theta - NextTask->Instances.size();
     for (int i = 0; i < machines.size(); i++){
         //Task 
@@ -185,32 +192,26 @@ void Scheduler::CheckRedundancy() {
     int i = 0, stop = 0;
 
     while (job->MachinesAvailable > 0 && stop < RunningTasks.size()){
-        
         if (RunningTasks[i]->Instances.size() < config.Theta){
             std::vector <Machine *> machines = getNextMachine(MRLP);
             assign(RunningTasks[i], machines);
         } else {
             stop += 1;
         }
-        i = i % RunningTasks.size();
+        i = (i+1) % RunningTasks.size();
     }
 }
 
-void Scheduler::CheckTask(Task * NextTask) {
+int Scheduler::CheckTask(Task * NextTask) {
     if (NextTask->S < config.R){
         NextTask->Checkpointable = true;
         std::vector <Machine *> machines = getNextMachine(MRLP);
         assign(NextTask, machines);
     } else {
         NextTask->Checkpointable = false;
-        
         std::vector <Machine *> Instances = getNextMachine(MRMP, config.Theta);
         if (Instances[0]->cs < config.Gamma) {
-            Task * subsequenttask = P_Queue.top(); //get the next task
-            P_Queue.pop(); // remove next task from queue
-            CheckTask(subsequenttask);
-            P_Queue.push(NextTask); // add this task to queue again
-            return;
+            return 0;
         } else {
             int pend = assign(NextTask, Instances);
             if (pend > 0){
@@ -225,16 +226,25 @@ void Scheduler::CheckTask(Task * NextTask) {
         }
     }
     RunningTasks.push_back(NextTask);
+    return 1;
 }
 
 void Scheduler::RunNextTasks() {
     CheckPendingRedundancy();
+    std::vector <Task *> TasksCheckFailed;
     
     while (P_Queue.empty() == false && job->MachinesAvailable > 0) {
         Task * NextTask = P_Queue.top(); // get first task in the queue
         P_Queue.pop(); // Remove the task from queue
-        CheckTask(NextTask);
+        if (CheckTask(NextTask) == 0)
+            TasksCheckFailed.push_back(NextTask); 
     } 
+
+    if (TasksCheckFailed.size() > 0) { // Re-add tasks that not pass the FT check to queue again
+        for (int i = 0; i < TasksCheckFailed.size(); i++){
+            P_Queue.push(TasksCheckFailed[i]);
+        }
+    }
 
     if (job->MachinesAvailable > 0) {
         CheckRedundancy();
@@ -265,9 +275,9 @@ void Scheduler::RCalc(int factor){
         }
         case R_MEDIAN: {
             if (NumberOfTasks % 2 == 0){
-                config.R = (localG[(NumberOfTasks / 2) - 1]->S + localG[NumberOfTasks / 2]->S) / 2.0;
+                config.R = double((localG[(NumberOfTasks / 2) - 1]->S + localG[NumberOfTasks / 2]->S) / 2.0);
             } else {
-                config.R = float(localG[NumberOfTasks / 2]->S);
+                config.R = double(localG[NumberOfTasks / 2]->S);
             }
             break;
         }
@@ -275,9 +285,9 @@ void Scheduler::RCalc(int factor){
             int half = NumberOfTasks / 2;
             
             if (half % 2 == 0){
-                config.R = (localG[(half / 2) - 1]->S + localG[half / 2]->S) / 2.0;
+                config.R = double((localG[(half / 2) - 1]->S + localG[half / 2]->S) / 2.0);
             } else {
-                config.R = float(localG[half / 2]->S);
+                config.R = double(localG[half / 2]->S);
             }
             break;
         }
@@ -285,13 +295,16 @@ void Scheduler::RCalc(int factor){
             int half = NumberOfTasks / 2;
             
             if (half % 2 == 0){
-                config.R = (localG[(NumberOfTasks - 1) - (half / 2)]->S + localG[NumberOfTasks - (half / 2)]->S) / 2.0;
+                config.R = double((localG[(NumberOfTasks - 1) - (half / 2)]->S + localG[NumberOfTasks - (half / 2)]->S) / 2.0);
             } else {
-                config.R = float(localG[(NumberOfTasks - 1) - (half / 2)]->S);
+                config.R = double(localG[(NumberOfTasks - 1) - (half / 2)]->S);
             }
             break;
         }
     }
+    eventhandler->logging.open("EventLog.txt", std::ofstream::app);
+    eventhandler->logging << "RThreshold=" << config.R << "\n";
+    eventhandler->logging.close();
 }
 
 void Scheduler::StartScheduler() {

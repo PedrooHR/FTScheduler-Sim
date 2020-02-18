@@ -1,0 +1,8 @@
+digraph {
+	drawgram1 -> dnapars ;
+	clustalw2 -> blast2 ;
+	drawgram2 -> protpars ;
+	dnapars -> clustalw1 ;
+	protpars -> clustalw2 ;
+	clustalw1 -> blast1 ;
+}

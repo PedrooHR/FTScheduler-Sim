@@ -1,0 +1,4 @@
+digraph {
+	nmoldyn -> vasp ;
+	mcsts -> nmoldyn ;
+}

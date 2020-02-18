@@ -1,8 +1,0 @@
-      3960 ->  Machine_9 Fault 
-     10080 -> Machine_11 Fault 
-     11340 -> Machine_24 Fault 
-     42000 -> Machine_73 Fault 
-     95580 ->  Machine_4 Fault 
-7205.640000
-106080
-9432820

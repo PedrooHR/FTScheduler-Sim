@@ -1,0 +1,6 @@
+digraph {
+	findClassesInProjects -> findProjects ;
+	findSemanticMetadata -> findClassesInProjects ;
+	findSemanticMetadata -> findProjects ;
+	searchLogicConcept -> findSemanticMetadata ;
+}

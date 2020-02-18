@@ -1,0 +1,12 @@
+digraph {
+	son -> sin ;
+	adcirc -> sin ;
+	sis -> adcirc2 ;
+	sin -> adcirc2 ;
+	ww3 -> sos ;
+	adcirc -> sos ;
+	ww3 -> son ;
+	adcirc -> son ;
+	sos -> sis ;
+	adcirc -> sis ;
+}

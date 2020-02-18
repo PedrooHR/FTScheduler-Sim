@@ -1,0 +1,5 @@
+digraph {
+	glimmer2 -> build_icm ;
+	extract -> long_orfs ;
+	build_icm -> extract ;
+}

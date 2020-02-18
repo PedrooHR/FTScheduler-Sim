@@ -35,20 +35,19 @@ void Job::ReadGraph(std::string JobString){
     taskdep = fopen(deppath.c_str(), "r+");
 
     int NumberOfTasks;
-    fscanf(taskdata, "%d", &NumberOfTasks);
+    fscanf(taskdata, "%d\n", &NumberOfTasks);
     TasksToComplete = NumberOfTasks;
 
     //Create all tasks
     for (int i = 0; i < NumberOfTasks; i++) {
         Task * task = new Task();
-        int output;
+        long int output;
+        float time;
         char name[50];
 
-        fscanf(taskdata, "%d", &task->id);
-        fscanf(taskdata, "%s", name);
-        fscanf(taskdata, "%d", &task->TaskTime);
-        fscanf(taskdata, "%d", &task->S);
-        fscanf(taskdata, "%d", &output);
+        fscanf(taskdata, "%d %s %f %li %li\n", &task->id, name, &time, &task->S, &output);
+
+        task->TaskTime = (int) ceil(time);
 
         task->status = TASK_NOTREADY;
         task->PendingRed = false;
@@ -60,8 +59,8 @@ void Job::ReadGraph(std::string JobString){
         task->Instances.clear();
 
         //Checkpoint info
-        task->TimeToCheckpoint = task->S / HDD_WRITE_SPEED;
-        task->NumberOfCheckpoints = task->TaskTime / task->TimeToCheckpoint;
+        task->TimeToCheckpoint = std::max(task->S / HDD_WRITE_SPEED, (long int) MINIMUM_CP_TIME); 
+        task->NumberOfCheckpoints = std::min(25, task->TaskTime / task->TimeToCheckpoint);
 
         G.push_back(task);
     }
@@ -117,7 +116,6 @@ void Job::ReadMachines(std::string JobString){
     }
 
     MachinesAvailable = number_of_machines;
-    MachinesUp = number_of_machines;
     NextSpot = 0;
     NextNormal = number_of_machines;
 

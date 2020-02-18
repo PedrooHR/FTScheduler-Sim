@@ -9,6 +9,7 @@
 #include <string>
 #include <algorithm>
 #include <string>
+#include <cmath>
 #include <time.h>
 
 //////////////////////////////////////////////////////////
@@ -40,8 +41,10 @@
 #define MACHINE_SPOT    2               // defines that the machines is spot
 #define SPOT_DELAY      60              // defines the time to provide a spot machine (in seconds)
 
-//Machines HDD Speed
-#define HDD_WRITE_SPEED 500             // defines the HDD speed for checkpoints in MB/s, value determined according to AWS 
+//Checkpoint related Definitions
+#define MINIMUM_CP_TIME     10          // defines the minimum tima a checkpoint needs to be done
+#define MAXIMUM_NUMBER_CP   25          // defines a maximum value a task will be checkpointed
+#define HDD_WRITE_SPEED     500         // defines the HDD speed for checkpoints in MB/s, value determined according to AWS 
                                         // general purpose HDD for writing not frequently large files (checkpoints) with less cost
 
 //Tasks Status Definition
@@ -88,7 +91,7 @@ class EventHandler;
 typedef struct {
     int Mspots = 0;             //Number of Spot Machines
     int A = 40, B = 50;         //Bounds of normal Machines
-    float R = 10000;            // Input Threshold, maximum size a task can be checkpointed 
+    double R = 10000;           // Input Threshold, maximum size a task can be checkpointed 
     int Theta = 2;              // Theta Input, maximum number of redundancies
     float Gamma = 0.75;         // Reliability Threshold   
 } Config;
@@ -135,7 +138,7 @@ public:
     std::vector <Machine *> getNextMachine(int Order, int MaxInstances);
     void CheckPendingRedundancy();
     void CheckRedundancy();
-    void CheckTask(Task * NextTask);
+    int CheckTask(Task * NextTask);
     void RunNextTasks();
     void RCalc(int factor);
     void StartScheduler();
@@ -173,7 +176,7 @@ public:
     int id;
     int TaskTime; //in second
     int DoD; //Degre of Dependency
-    int S; //Size of Task Input
+    long int S; //Size of Task Input
     int TimeToCheckpoint;
     int NumberOfCheckpoints;
     std::vector <Task *> dependencies;
@@ -202,7 +205,6 @@ public:
     int MachinesAvailable;
     int NextSpot;
     int NextNormal;
-    int MachinesUp;
 
     Task * getTaskByID(int taskid);
     Machine * getMachineByID(std::string machineid);

@@ -21,7 +21,6 @@ int main(int argc, char * argv[]){
     Job * job = new Job(JobString);
     Scheduler * scheduler = new Scheduler(std::stoi(argv[2]), eventhandler);
 
-
     //First Steps
     ReadFaults(JobString, eventhandler); // Add All Event Faults
     eventhandler->scheduler = scheduler;
