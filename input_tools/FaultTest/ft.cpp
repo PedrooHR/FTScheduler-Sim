@@ -7,7 +7,7 @@
 
 using namespace std;
 
-// arguments: 1=weibullshape (mtbf); 2=#machines; 3=#failures, 4=#minimunmachines
+// arguments: 1=weibullscale (mtbf); 2=#machines; 3=#failures, 4=#minimunmachines, 5=#tipos
 
 int main(int argc, char * argv[]){
   
@@ -16,9 +16,10 @@ int main(int argc, char * argv[]){
   std::default_random_engine generator (seed);
 
   //std::weibull_distribution<double> weibull (0.78, atof(argv[1]));
-  std::weibull_distribution<double> weibull (0.387187, atof(argv[1]));
+  //std::weibull_distribution<double> weibull (0.387187, atof(argv[1]));
+  std::weibull_distribution<double> weibull (0.64, atof(argv[1]));
   std::uniform_int_distribution<int> uniform (0, atoi(argv[2]) - 1);
-  std::uniform_int_distribution<int> types (1, 3); 
+  std::uniform_int_distribution<int> types (1, atoi(argv[5])); 
 
   std::vector<int> ids;
   std::vector <int> marked;
@@ -45,7 +46,7 @@ int main(int argc, char * argv[]){
       marked[first_u] = 1;
       currmachines--;
       if (currmachines < atoi(argv[4])){
-        ids[first_u] = nextmachine++;
+        ids[first_u] = ++nextmachine;
         marked[first_u] = 0;
       }
     }

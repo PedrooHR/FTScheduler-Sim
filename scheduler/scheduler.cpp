@@ -36,9 +36,9 @@ void Scheduler::Initialize() {
         }
         TotalTime += job->G[i]->TaskTime;
     }
-    eventhandler->logging.open("EventLog.txt", std::ofstream::app);
+    //eventhandler->logging.open("EventLog.txt", std::ofstream::app);
     eventhandler->logging << "SumTaskTimes=" << TotalTime << "\n";
-    eventhandler->logging.close();
+    //eventhandler->logging.close();
 }
 
 std::vector <Machine *> Scheduler::Provide(int Number) { //Provides Spot Machines
@@ -210,7 +210,8 @@ int Scheduler::CheckTask(Task * NextTask) {
     } else {
         NextTask->Checkpointable = false;
         std::vector <Machine *> Instances = getNextMachine(MRMP, config.Theta);
-        if (Instances[0]->cs < config.Gamma) {
+        if (Instances[0]->cs < config.Gamma && NextTask->Tries < NON_CP_TRIES) {
+            NextTask->Tries++;
             return 0;
         } else {
             int pend = assign(NextTask, Instances);
@@ -232,7 +233,7 @@ int Scheduler::CheckTask(Task * NextTask) {
 void Scheduler::RunNextTasks() {
     CheckPendingRedundancy();
     std::vector <Task *> TasksCheckFailed;
-    
+
     while (P_Queue.empty() == false && job->MachinesAvailable > 0) {
         Task * NextTask = P_Queue.top(); // get first task in the queue
         P_Queue.pop(); // Remove the task from queue
@@ -301,13 +302,26 @@ void Scheduler::RCalc(int factor){
             }
             break;
         }
+        case R_ALLCHECKPOINT: {
+            config.R = INT_MAX;
+            break;
+        }
+        case R_ALLREDUNDANCY: {
+            config.R = -1;
+            break;
+        }
+        case R_USERDEFINED: {
+            break;
+        }
     }
-    eventhandler->logging.open("EventLog.txt", std::ofstream::app);
+    //eventhandler->logging.open("EventLog.txt", std::ofstream::app);
     eventhandler->logging << "RThreshold=" << config.R << "\n";
-    eventhandler->logging.close();
+   // eventhandler->logging.close();
 }
 
 void Scheduler::StartScheduler() {
+    //Call to the auxiliary Function to determine R threshold
+    RCalc(RFactor);
     Initialize();
     RunNextTasks();
 
@@ -322,7 +336,4 @@ void Scheduler::StartScheduler() {
     detector->type = EVENT_FAULTDETECTOR;
     detector->time = 0;
     eventhandler->AddEvent(detector);
-
-    //Call to the auxiliary Function to determine R threshold
-    RCalc(RFactor);
 }

@@ -18,21 +18,10 @@
 //////////////////////////////////////////////////////////
 
 //System definitions
-#define MONITOR_TIME        5*60        // time in seconds to the system monitor sensors and network
 #define FDETECTOR_TIME      1*60        // time in seconds to the system detects if there are machines with fault
-
-//R threshold definitions
-#define R_MEAN              1           // calculates R threshold by the mean of all tasks' datainputs size
-#define R_MEDIAN            2           // calculates R threshold by the median of all tasks' datainputs size
-#define R_LQUARTILE         3           // calculates R threshold by the first quartile of all tasks' datainputs size
-#define R_HQUARTILE         4           // calculates R threshold by the third quartile of all tasks' datainputs size
-#define R_ALLCHECKPOINT     5           // Let R threshold be the maximum possible, so everytask will use CP instead of Redundancy
-#define R_ALLREDUNDANCY     6           // Let R threshold be the minimum possible, so everytask will use Redundancy instead of CP
-#define R_USERDEFINED       7           // Let the R threshold value be the one defined in the structure (user defined option)
-
-//Machines Order Definition
-#define MRLP                1           // sort machines by more reliability and then by less processing
-#define MRMP                2           // sort machines by more reliability and then by more processing
+#define CHECKPOINT_MODE     0           // Defines that checkpoint mode is activated
+#define REDUNDANCY_MODE     1           // Defines redundancy redundancy mode is activated
+#define DEFAULT_MODE        2           // No FT Mode activated
 
 //Machines Status Definition
 #define MACHINE_DOWN        0           // when a machine fails
@@ -40,19 +29,10 @@
 #define MACHINE_AVAILABLE   2           // when a machine is available
 #define MACHINE_BUSY        3           // when a machine is executing a task
 
-//Machines Type Definition
-#define MACHINE_NORMAL      1           // defines that the machine is standard
-#define MACHINE_SPOT        2           // defines that the machines is spot
-#define SPOT_DELAY          60          // defines the time to provide a spot machine (in seconds)
-
 //Checkpoint related Definitions
-#define NON_CP_TRIES        1           // defines maximum number of reescheduling of non checkpointable tasks
-#define CP_INT_MULTIPLIER   1.00        // defines how much times the calculed interval of checkpoint will be used
 #define MINIMUM_CP_TIME     10          // defines the minimum tima a checkpoint needs to be done
-#define MAXIMUM_NUMBER_CP   25          // defines a maximum value a task will be checkpointed
 #define HDD_WRITE_SPEED     40          // defines the HDD speed for checkpoints in MB/s, value determined according to AWS 
                                         // general purpose HDD for writing not frequently large files (checkpoints) with less cost
-                                        // https://docs.aws.amazon.com/pt_br/AWSEC2/latest/UserGuide/ebs-volume-types.html#EBSVolumeTypes_st1
 
 //Tasks Status Definition
 #define TASK_NOTREADY       0           // when a task still have dependencies
@@ -65,10 +45,9 @@
 #define EVENT_FINISHTASK    2           // when a machine finishes a task
 #define EVENT_TASKSTART     3           // when a machine will start a task
 #define EVENT_FAULT         4           // when a fault occurs
-#define EVENT_NETWORKREPAIR 5           // when the network fault will be recovered
-#define EVENT_SENSORSREPAIR 6           // when the sensors fault will be recovered
-#define EVENT_SYSMONITOR    7           // periodically event to monitor system network and sensors
-#define EVENT_FAULTDETECTOR 8           // periodically event that detects when a fault has occurred
+#define EVENT_NETWORKREPAIR 5           // when the network fault will be recovered (this not affect FCFS Sim)
+#define EVENT_SENSORSREPAIR 6           // when the sensors fault will be recovered (this not affect FCFS Sim)
+#define EVENT_FAULTDETECTOR 7           // periodically event that detects when a fault has occurred
 
 //Faults Definition 
 #define FAULT_MACHINEDOWN   1           // when a fault occurs and machine goes down
@@ -83,7 +62,6 @@
 //////////////////////////////////////////////////////////
 
 class Event;
-class PQCompare;
 class EventCompareFunction;
 class Scheduler;
 class Machine;
@@ -96,11 +74,7 @@ class EventHandler;
 //////////////////////////////////////////////////////////
 
 typedef struct {
-    int Mspots = 0;             //Number of Spot Machines
-    int A = 40, B = 50;         //Bounds of normal Machines
-    double R = 10000;           // Input Threshold, maximum size a task can be checkpointed 
-    int Theta = 2;              // Theta Input, maximum number of redundancies
-    float Gamma = 0.75;         // Reliability Threshold   
+    int A = 40, B = 50;         //Bounds of Machines
 } Config;
 
 class Event {
@@ -109,12 +83,6 @@ public:
     std::string info; 
     int time;
     Event();
-};
-
-class PQCompare
-{
-public:
-    bool operator() (const Task * left, const Task * right) const; 
 };
 
 class EventCompareFunction
@@ -131,46 +99,33 @@ class Scheduler
 {
 public:
     std::vector <Task *> RunningTasks;
-    std::priority_queue<int, std::vector<Task *>, PQCompare> P_Queue;
+    std::queue <Task *> ReadyQueue;
     Job * job;
     Config config;
-    int RFactor;
     EventHandler * eventhandler;
+    int CPRed; // flex variable, can be CP interval or number of Redundancy 
+    int Mode; // Checkpoint or Redundancy
 
-    int GetDependents(Task * curr_node, int Mark);
     void Initialize();
-    std::vector <Machine *> Provide(int Number);
-    int assign(Task * NextTask, std::vector <Machine *> machines);
-    std::vector <Machine *> getNextMachine(int Order);
-    std::vector <Machine *> getNextMachine(int Order, int MaxInstances);
-    void CheckPendingRedundancy();
-    void CheckRedundancy();
+    void assign(Task * NextTask, std::vector <Machine *> machines);
+    std::vector <Machine *> getNextMachine(int Quantity);
     int CheckTask(Task * NextTask);
     void RunNextTasks();
-    void RCalc(int factor);
     void StartScheduler();
 
-    Scheduler(int factor, EventHandler * handler);
+    Scheduler(EventHandler * handler, int Mode, int value);
 };
 
 class Machine {
 public:
     //Unchageable variables
     std::string id; //can be any string
-    float cp; //Computing Performance Coefficient
-    int type;
+    float cp;
     //Changeable variables
     int status;
     long long int StartTime;
-    float cs; //Reliability Coefficient
     int TimeToComplete; //in second
-    int CurrCheckpoint;
-    int TimeBetweenCP;
     Task * TaskExecuting;
-    bool FaultSensors;
-    float SensorsDiscount;
-    bool FaultNetwork;
-    float NetworkDiscount; 
 
     //Machines Constructors
     Machine();
@@ -182,20 +137,14 @@ public:
     //Unchangeable variables
     int id;
     int TaskTime; //in second
-    int DoD; //Degre of Dependency
-    long int S; //Size of Task Input
-    int TimeToCheckpoint;
-    int NumberOfCheckpoints;
     std::vector <Task *> dependencies;
     std::vector <Task *> dependents; //only the direct ones
+    int TimeToCheckpoint;
+    long int S;
     //Changeable variables
     int status; 
-    int Tries;
     int CurrNumberOfDependencies;
-    bool PendingRed;
-    bool Checkpointable; //True if task will do checkpoint
     int LastValidCP; //last valid checkpoint
-    int auxDependentMapping; // Auxiliary variable for DoD Calculus
     std::vector <Machine *> Instances;
     long long int StartTime;
     
@@ -208,10 +157,8 @@ class Job {
 public:
     std::vector <Task *> G; //Dependency Graph
     std::vector <Machine *> Machines;
-    std::vector <Machine *> Machines_S;
     int TasksToComplete;
     int MachinesAvailable;
-    int NextSpot;
     int NextNormal;
 
     Task * getTaskByID(int taskid);
@@ -225,8 +172,7 @@ public:
 
 class EventHandler {
 public:
-    std::ofstream logging;
-    std::ofstream compiled;
+    std::ofstream logging, compiled;
     std::priority_queue<int, std::vector<Event *>, EventCompareFunction> EventQueue; 
     Scheduler * scheduler;
 

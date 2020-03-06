@@ -54,13 +54,15 @@ void Job::ReadGraph(std::string JobString){
         task->Checkpointable = false;
         task->LastValidCP = 0;
         task->StartTime = -1;
+        task->Tries = 0;
         task->dependencies.clear();
         task->dependents.clear();
         task->Instances.clear();
 
         //Checkpoint info
-        task->TimeToCheckpoint = std::max(task->S / HDD_WRITE_SPEED, (long int) MINIMUM_CP_TIME); 
-        task->NumberOfCheckpoints = std::min(25, task->TaskTime / task->TimeToCheckpoint);
+        task->TimeToCheckpoint = std::max((task->S / HDD_WRITE_SPEED) * 2, (long int) MINIMUM_CP_TIME); 
+        int number_cp = ((task->TaskTime / task->TimeToCheckpoint)) * CP_INT_MULTIPLIER; 
+        task->NumberOfCheckpoints = number_cp;//std::min(25, number_cp);
 
         G.push_back(task);
     }

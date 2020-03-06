@@ -20,6 +20,8 @@ int main(int argc, char * argv[]){
     EventHandler * eventhandler = new EventHandler();
     Job * job = new Job(JobString);
     Scheduler * scheduler = new Scheduler(std::stoi(argv[2]), eventhandler);
+    scheduler->config.A = job->MachinesAvailable;
+    scheduler->config.B = job->MachinesAvailable;
 
     //First Steps
     ReadFaults(JobString, eventhandler); // Add All Event Faults

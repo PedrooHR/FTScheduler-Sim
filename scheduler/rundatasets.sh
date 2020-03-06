@@ -1,11 +1,13 @@
 rootdir=$(pwd)
-make cleanall
+#make cleanall
 rm *.txt *.cfg
 rm -rf Results/
 rm -rf EvLogs/
-make
+#make
 mkdir Results
 mkdir EvLogs
+
+touch compiled.txt
 
 datasetsdir="$(pwd)/Datasets"
 
@@ -19,23 +21,20 @@ for JobString in *; do
     cd $rootdir
     
     mkdir $rootdir/Results/$JobString
-    echo "Running Application for parameter Rfactor=1"
-    ./scheduler $JobString 1 >> "EvLogs/"$JobString"_ExLog1.txt"
-    cp EventLog.txt $rootdir/Results/$JobString/EventLog_1.txt 
-    echo "Running Application for parameter Rfactor=2"
-    ./scheduler $JobString 2 >> "EvLogs/"$JobString"_ExLog2.txt"
-    cp EventLog.txt $rootdir/Results/$JobString/EventLog_2.txt
-    echo "Running Application for parameter Rfactor=3"
-    ./scheduler $JobString 3 >> "EvLogs/"$JobString"_ExLog3.txt"
-    cp EventLog.txt $rootdir/Results/$JobString/EventLog_3.txt
-    echo "Running Application for parameter Rfactor=4"
-    ./scheduler $JobString 4 >> "EvLogs/"$JobString"_ExLog4.txt"
-    cp EventLog.txt $rootdir/Results/$JobString/EventLog_4.txt
 
-    rm *.cfg *.txt
+    for arg in "$@";
+    do
+        echo "Running Application for parameter Rfactor=$arg"
+        ./scheduler $JobString $arg >> "EvLogs/"$JobString"_ExLog"$arg".txt"
+        cp EventLog.txt $rootdir/Results/$JobString/EventLog_$arg.txt 
+    done
+    
+    echo "" >> compiled.txt
 
     cd $datasetsdir
-
 done
+cd $rootdir
 
+cp compiled.txt $rootdir/Results/compiled.txt
+rm -rf *.cfg *.txt
 

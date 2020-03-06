@@ -48,36 +48,21 @@ void EventHandler::NextEvent() {
             Machine * machine = scheduler->job->getMachineByID(machineid); 
 
             if (machine->status == MACHINE_BUSY && machine->TaskExecuting->id == task->id) {
-                machine->CurrCheckpoint++;
-                if (task->LastValidCP >= machine->CurrCheckpoint) { //if the CP already has been done
-                    Event * event = new Event();
-                    if (machine->CurrCheckpoint < task->NumberOfCheckpoints){ 
-                        event->type = EVENT_CHECKPOINT;
-                        event->info = std::to_string(task->id) + " " + machine->id + " ";
-                        event->time = GLOBAL_TIMER + machine->TimeBetweenCP;
-                    } else {
-                        event->type = EVENT_FINISHTASK;
-                        event->info = std::to_string(task->id) + " " + machine->id + " ";
-                        event->time = machine->StartTime + machine->TimeToComplete;
-                    }
-                    AddEvent(event);    
-                    logging << "event=CHECKPOINT id=" << taskid << " machine=" << machineid << " status=SKIPCP_" << machine->CurrCheckpoint << " time=" << GLOBAL_TIMER << "\n";
-                } else { // if this task will do the cp
-                    machine->TimeToComplete += task->TimeToCheckpoint;
-                    task->LastValidCP = machine->CurrCheckpoint;
-                    Event * event = new Event();
-                    if (machine->CurrCheckpoint < task->NumberOfCheckpoints){ 
-                        event->type = EVENT_CHECKPOINT;
-                        event->info = std::to_string(task->id) + " " + machine->id + " ";
-                        event->time = task->TimeToCheckpoint + GLOBAL_TIMER + machine->TimeBetweenCP;
-                    } else {
-                        event->type = EVENT_FINISHTASK;
-                        event->info = std::to_string(task->id) + " " + machine->id + " ";
-                        event->time = machine->StartTime + machine->TimeToComplete;
-                    }
-                    AddEvent(event);
-                    logging << "event=CHECKPOINT id=" << taskid << " machine=" << machineid << " status=DONECP_" << machine->CurrCheckpoint << " time=" << GLOBAL_TIMER << "\n";
+                task->LastValidCP++;
+                machine->TimeToComplete += task->TimeToCheckpoint; // Add the time to make the CP to the total execution time
+                
+                Event * event = new Event();
+                if ((machine->TimeToComplete - (GLOBAL_TIMER + machine->StartTime)) > scheduler->CPRed){ // lets count the CP interval only after finishing this CP
+                    event->type = EVENT_CHECKPOINT;
+                    event->info = std::to_string(task->id) + " " + machine->id + " ";
+                    event->time = task->TimeToCheckpoint + GLOBAL_TIMER + scheduler->CPRed;
+                } else {
+                    event->type = EVENT_FINISHTASK;
+                    event->info = std::to_string(task->id) + " " + machine->id + " ";
+                    event->time = machine->StartTime + machine->TimeToComplete;
                 }
+                AddEvent(event);
+                logging << "event=CHECKPOINT id=" << taskid << " machine=" << machineid << " status=DONECP_" << task->LastValidCP << " time=" << GLOBAL_TIMER << "\n";
             }
             break;
         }
@@ -107,18 +92,9 @@ void EventHandler::NextEvent() {
                 std::cout << "Tasks to go: " << scheduler->job->TasksToComplete << "\n";
                 //Release the Machines;
                 for (int i = 0; i < task->Instances.size(); i++){
-                    if (task->Instances[i]->type == MACHINE_NORMAL){
-                        task->Instances[i]->status = MACHINE_AVAILABLE;
-                        task->Instances[i]->TaskExecuting = NULL;
-                        scheduler->job->MachinesAvailable++;
-                    } else {
-                        for (int j = 0; j < scheduler->job->Machines_S.size(); j++){
-                            if (task->Instances[i]->id.compare(scheduler->job->Machines_S[j]->id) == 0){
-                                scheduler->job->Machines_S.erase(scheduler->job->Machines_S.begin() + j);
-                                break;
-                            }   
-                        }
-                    }
+                    task->Instances[i]->status = MACHINE_AVAILABLE;
+                    task->Instances[i]->TaskExecuting = NULL;
+                    scheduler->job->MachinesAvailable++;
                 }
 
                 //Check other Tasks
@@ -126,12 +102,12 @@ void EventHandler::NextEvent() {
                     task->dependents[i]->CurrNumberOfDependencies--;
                     if (task->dependents[i]->CurrNumberOfDependencies <= 0 && task->dependents[i]->status == TASK_NOTREADY){
                         task->dependents[i]->status = TASK_READY;
-                        scheduler->P_Queue.push(task->dependents[i]);
+                        scheduler->ReadyQueue.push(task->dependents[i]);
                     }
                 }
-            
+                                
                 scheduler->RunNextTasks(); 
-
+                               
                 logging << "event=FINISHTASK " << "id=" << taskid << " machine=" << machineid << " time=" << GLOBAL_TIMER << "\n";
             }
             break;
@@ -139,7 +115,7 @@ void EventHandler::NextEvent() {
         case EVENT_TASKSTART: {
             //Define the new GlobalTime
             GLOBAL_TIMER = CurrentEvent->time;
-            
+
             std::string eventinfo = CurrentEvent->info;
             int prev = 0; int curr = eventinfo.find(' ');
             int taskid = std::stoi(eventinfo.substr(prev, curr - prev));
@@ -154,16 +130,14 @@ void EventHandler::NextEvent() {
                     task->StartTime = GLOBAL_TIMER;
                 }
 
-                if (task->Checkpointable == true) {
-                    machine->TimeBetweenCP = (task->TaskTime / machine->cp) / task->NumberOfCheckpoints;
-                    machine->CurrCheckpoint = task->LastValidCP;
+                if (scheduler->Mode == CHECKPOINT_MODE) {
                     machine->StartTime = GLOBAL_TIMER;
-                    machine->TimeToComplete = (task->TaskTime / machine->cp) - (machine->TimeBetweenCP * machine->CurrCheckpoint); // Although machines are different, this is a good approximation to define time left
+                    machine->TimeToComplete = (task->TaskTime / machine->cp) - (scheduler->CPRed * task->LastValidCP); // Although machines are different, this is a good approximation to define time left
                     Event * event = new Event();
-                    if (machine->CurrCheckpoint < task->NumberOfCheckpoints){
+                    if (machine->TimeToComplete > scheduler->CPRed){
                         event->type = EVENT_CHECKPOINT;
                         event->info = std::to_string(task->id) + " " + machine->id + " ";
-                        event->time = machine->StartTime + machine->TimeBetweenCP;   
+                        event->time = machine->StartTime + scheduler->CPRed;   
                     } else {
                         event->type = EVENT_FINISHTASK;
                         event->info = std::to_string(task->id) + " " + machine->id + " ";
@@ -212,87 +186,50 @@ void EventHandler::NextEvent() {
                     break;
                 }
                 case FAULT_SENSORS: {
-                    Machine * machine = scheduler->job->getMachineByID(machineid); 
-                    machine->FaultSensors = true;
-                    Event * repair = new Event();
+                    /*Event * repair = new Event();
                     repair->type = EVENT_SENSORSREPAIR;
                     repair->info = machineid;
                     repair->time = GLOBAL_TIMER + SENSORS_REPAIR;
-                    AddEvent(repair);
+                    AddEvent(repair);*/
                     logging << "event=FAULT " << " machine=" << machineid << " type=SENSORS time=" << GLOBAL_TIMER << "\n";
                     break;
                 }
                 case FAULT_NETWORK: {
-                    Machine * machine = scheduler->job->getMachineByID(machineid); 
-                    machine->FaultNetwork = true;
-                    Event * repair = new Event();
+                    /*Event * repair = new Event();
                     repair->type = EVENT_NETWORKREPAIR;
                     repair->info = machineid;
                     repair->time = GLOBAL_TIMER + NETWORK_REPAIR;
-                    AddEvent(repair);
+                    AddEvent(repair);*/
                     logging << "event=FAULT machine=" << machineid << " type=NETWORK time=" << GLOBAL_TIMER << "\n";
                     break;
                 }
             }
             break;
         }
-        case EVENT_NETWORKREPAIR: {
+        case EVENT_NETWORKREPAIR: {  // This should not affect FCFS att all
             //Define the new GlobalTime
             GLOBAL_TIMER = CurrentEvent->time;
+            std::string eventinfo = CurrentEvent->info;
+            int prev = 0; int curr = eventinfo.find(' ');
+            std::string machineid = eventinfo.substr(prev, curr - prev);
 
-            std::string machineid = CurrentEvent->info;
-            Machine * machine = scheduler->job->getMachineByID(machineid); 
-
-            machine->FaultNetwork = false;
-            logging << "event=NETWORKREPAIR " << " machine=" << machineid << " type=NETWORK time=" << GLOBAL_TIMER << "\n";
+            logging << "event=NETWORKREPAIR " << " machine=" << machineid << " type=NETWORK time=" << GLOBAL_TIMER << "\n";   
             break;
         }
-        case EVENT_SENSORSREPAIR: {
+        case EVENT_SENSORSREPAIR: { // This should not affect FCFS att all
             //Define the new GlobalTime
             GLOBAL_TIMER = CurrentEvent->time;
+            std::string eventinfo = CurrentEvent->info;
+            int prev = 0; int curr = eventinfo.find(' ');
+            std::string machineid = eventinfo.substr(prev, curr - prev);
 
-            std::string machineid = CurrentEvent->info;
-            Machine * machine = scheduler->job->getMachineByID(machineid); 
-
-            machine->FaultSensors = false;
             logging << "event=SENSORSREPAIR " << " machine=" << machineid << " type=SENSORS time=" << GLOBAL_TIMER << "\n";     
             break;
         }
-        case EVENT_SYSMONITOR: {
-            //Define the new GlobalTime
-            GLOBAL_TIMER = CurrentEvent->time;
-
-            for (int i = 0; i < scheduler->job->Machines.size(); i++){
-                Machine * machine = scheduler->job->Machines[i];
-
-                if (machine->FaultNetwork == true){
-                    if (machine->NetworkDiscount < 0.5){
-                        machine->NetworkDiscount += 0.025;
-                        machine->cs -= 0.025;
-                        logging << "event=SYSMONITOR " << " machine=" << machine->id << " type=NETWORK_CS_" << machine->cs << " time=" << GLOBAL_TIMER << "\n";        
-                    }
-                }
-                if (machine->FaultSensors == true){
-                    if (machine->SensorsDiscount < 0.5){
-                        machine->SensorsDiscount += 0.025;
-                        machine->cs -= 0.025;
-                        logging << "event=SYSMONITOR " << " machine=" << machine->id << " type=SENSORS_CS_" << machine->cs << " time=" << GLOBAL_TIMER << "\n";        
-                    }
-                }
-            }
-            
-            // Event for next monitoring
-            Event * event = new Event();
-            event->type = EVENT_SYSMONITOR;
-            event->time = CurrentEvent->time + MONITOR_TIME; 
-            if (scheduler->job->TasksToComplete > 0)
-                AddEvent(event);
-            break;
-        }
+        
         case EVENT_FAULTDETECTOR: {
             //Define the new GlobalTime
             GLOBAL_TIMER = CurrentEvent->time;
-            
             //We will simplify the Fault Detection here, every 60 seconds, the system will check if any there are new machines down.
             std::vector <Machine *> machines = scheduler->job->Machines;
 
@@ -301,24 +238,17 @@ void EventHandler::NextEvent() {
                     machines[i]->status = MACHINE_TURNEDOFF; //Mark as a verified died machine
                     if (machines[i]->TaskExecuting == NULL)
                         scheduler->job->MachinesAvailable--;
+
                     // Check if we are in the minimum value on standard machines
                     if (scheduler->job->MachinesAvailable < scheduler->config.A){ // Creates a new machine if below the minimum value
                         Machine * newMachine = new Machine();
                         
-                        newMachine->id = "NORMALMACHINE_" + std::to_string(scheduler->job->NextNormal);
-                        newMachine->type = MACHINE_NORMAL;
+                        newMachine->id = "MACHINE_" + std::to_string(scheduler->job->NextNormal);
                         newMachine->status = MACHINE_AVAILABLE;
                         newMachine->StartTime = 0;
-                        newMachine->cs = 1.0;
                         newMachine->cp = (80 + (rand() % 20)) / 100.0;
                         newMachine->TimeToComplete = 0; 
-                        newMachine->CurrCheckpoint = 0;
-                        newMachine->TimeBetweenCP = 0;
                         newMachine->TaskExecuting = NULL;
-                        newMachine->FaultSensors = false;
-                        newMachine->SensorsDiscount = 0.0;
-                        newMachine->FaultNetwork = false;
-                        newMachine->NetworkDiscount = 0.0; 
                         scheduler->job->Machines.push_back(newMachine);
                         scheduler->job->NextNormal++;
                         scheduler->job->MachinesAvailable++;
@@ -340,14 +270,10 @@ void EventHandler::NextEvent() {
                             task->StartTime = -1;
                             task->Instances.resize(0);
                             // Add to queue again, if has a valid checkpoint, it will be start from the last one
-                            scheduler->P_Queue.push(task);     
+                            scheduler->ReadyQueue.push(task);     
                             scheduler->RunNextTasks();
                             logging << "event=FAULTDETECT " << " machine=" << machines[i]->id << " type=TASKRESCHEDULED_" << task->id << " time=" << GLOBAL_TIMER << "\n";                           
-                        } else {
-                            if (machinesup < scheduler->config.Theta && task->Checkpointable == false){
-                                task->PendingRed = true;
-                            }
-                        }
+                        } 
                    }
                 }
             }
@@ -360,7 +286,6 @@ void EventHandler::NextEvent() {
                 AddEvent(event);
             break;
         }
-    }
-    scheduler->RunNextTasks();
+    } 
 }
 
