@@ -15,6 +15,7 @@ Task * Job::getTaskByID(int taskid){
             break;
         }
     }
+    return NULL;
 }
 
 Machine * Job::getMachineByID(std::string machineid){
@@ -24,6 +25,7 @@ Machine * Job::getMachineByID(std::string machineid){
             break;
         }
     }
+    return NULL;
 }
 
 void Job::ReadGraph(std::string JobString){
@@ -36,6 +38,7 @@ void Job::ReadGraph(std::string JobString){
 
     int NumberOfTasks;
     fscanf(taskdata, "%d\n", &NumberOfTasks);
+    //NumberOfTasks = NumberOfTasks - 3; //Genome dataset fix
     TasksToComplete = NumberOfTasks;
 
     //Create all tasks
@@ -47,7 +50,8 @@ void Job::ReadGraph(std::string JobString){
 
         fscanf(taskdata, "%d %s %f %li %li\n", &task->id, name, &time, &task->S, &output);
 
-        task->TaskTime = (int) ceil(time);
+        task->TaskTime = (int) (ceil(time) * TASK_SCALING_TIME);
+        task->S *= TASK_SCALING_SIZE;
 
         task->status = TASK_NOTREADY;
         task->PendingRed = false;
@@ -61,8 +65,10 @@ void Job::ReadGraph(std::string JobString){
 
         //Checkpoint info
         task->TimeToCheckpoint = std::max((task->S / HDD_WRITE_SPEED) * 2, (long int) MINIMUM_CP_TIME); 
-        int number_cp = ((task->TaskTime / task->TimeToCheckpoint)) * CP_INT_MULTIPLIER; 
-        task->NumberOfCheckpoints = number_cp;//std::min(25, number_cp);
+        int TimeBetweenCP = std::max(MINIMUN_CP_INTERVAL, task->TimeToCheckpoint);    //How many times task executed for a longer time than the sum of saving and loading a cp
+        //FIX ME: Change the event from looking at #CP to look at CP interval
+        int number_cp = (int) round((task->TaskTime / TimeBetweenCP) * CP_INT_MULTIPLIER); 
+        task->NumberOfCheckpoints = number_cp;
 
         G.push_back(task);
     }
@@ -92,6 +98,7 @@ void Job::ReadMachines(std::string JobString){
     FILE * machinefile;
 
     machinefile = fopen(machinespath.c_str(), "r+");
+    /* Temporary  machinefile = fopen("machines.txt", "r+"); */
 
     int number_of_machines;
     fscanf(machinefile, "%d", &number_of_machines);

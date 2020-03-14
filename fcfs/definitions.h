@@ -22,6 +22,8 @@
 #define CHECKPOINT_MODE     0           // Defines that checkpoint mode is activated
 #define REDUNDANCY_MODE     1           // Defines redundancy redundancy mode is activated
 #define DEFAULT_MODE        2           // No FT Mode activated
+#define TASK_SCALING_TIME   10           // defines a factor to scale tasks time (hypothesis)
+#define TASK_SCALING_SIZE   10           // defines a factor to scale tasks size (hypothesis)
 
 //Machines Status Definition
 #define MACHINE_DOWN        0           // when a machine fails

@@ -25,7 +25,7 @@ void EventHandler::NextEvent() {
     Event * CurrentEvent = EventQueue.top(); //get the next event 
     EventQueue.pop(); //remove event from queue;
 
-    if (scheduler->job->TasksToComplete <= 0){
+    if (scheduler->job->TasksToComplete < 1){
         EventQueue = std::priority_queue<int, std::vector<Event *>, EventCompareFunction>();
         compiled.open("compiled.txt", std::ofstream::app);
         compiled << GLOBAL_TIMER << " ";
@@ -108,7 +108,7 @@ void EventHandler::NextEvent() {
                                 
                 scheduler->RunNextTasks(); 
                                
-                logging << "event=FINISHTASK " << "id=" << taskid << " machine=" << machineid << " time=" << GLOBAL_TIMER << "\n";
+                logging << "event=FINISHTASK " << "id=" << taskid << " machine=" << machineid << " time=" << GLOBAL_TIMER << " Tasks to GO: "<< scheduler->job->TasksToComplete << "\n";
             }
             break;
         }

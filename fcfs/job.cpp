@@ -15,6 +15,7 @@ Task * Job::getTaskByID(int taskid){
             break;
         }
     }
+    return NULL;
 }
 
 Machine * Job::getMachineByID(std::string machineid){
@@ -24,6 +25,7 @@ Machine * Job::getMachineByID(std::string machineid){
             break;
         }
     }
+    return NULL;
 }
 
 void Job::ReadGraph(std::string JobString){
@@ -36,6 +38,7 @@ void Job::ReadGraph(std::string JobString){
 
     int NumberOfTasks;
     fscanf(taskdata, "%d\n", &NumberOfTasks);
+    //NumberOfTasks = NumberOfTasks - 3; //Genome dataset fix
     TasksToComplete = NumberOfTasks;
 
     //Create all tasks
@@ -47,7 +50,8 @@ void Job::ReadGraph(std::string JobString){
 
         fscanf(taskdata, "%d %s %f %li %li\n", &task->id, name, &time, &task->S, &output);
 
-        task->TaskTime = (int) ceil(time);
+        task->TaskTime = (int) (ceil(time) * TASK_SCALING_TIME);
+        task->S *= TASK_SCALING_SIZE;
 
         task->status = TASK_NOTREADY;
         task->LastValidCP = 0;
@@ -87,6 +91,7 @@ void Job::ReadMachines(std::string JobString){
     FILE * machinefile;
 
     machinefile = fopen(machinespath.c_str(), "r+");
+    /* Temporary  machinefile = fopen("machines.txt", "r+"); */
 
     int number_of_machines;
     fscanf(machinefile, "%d", &number_of_machines);

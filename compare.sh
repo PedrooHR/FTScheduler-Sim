@@ -6,14 +6,18 @@ mgendir=$(pwd)/input_tools/MachineGen
 cd $fcfsdir
 make cleanall
 make
+rm *.cfg *.txt
 cd $ppqdir
 make cleanall 
 make
+rm *.cfg *.txt
 
 cd $rootdir
 
+rm Results/ppq/*.txt
+rm Results/fcfs/*.txt
 
-for run in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+for run in 1 2 3 4 5 6 7 8 9 10; do
     #update machines and faults
     cd  $ppqdir/Datasets/avianflu/ && rm *_f.cfg *_m.txt && cp $ftdir/machines50/_f$run.cfg avianflu_f.cfg && cp $mgendir/machines50/_m$run.txt avianflu_m.txt
     cd $fcfsdir/Datasets/avianflu/ && rm *_f.cfg *_m.txt && cp $ftdir/machines50/_f$run.cfg avianflu_f.cfg && cp $mgendir/machines50/_m$run.txt avianflu_m.txt
@@ -57,12 +61,31 @@ for run in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
     #run on fcfs
     cd $fcfsdir
     bash rundatasets.sh 
-    cp Results/compiled.txt $rootdir/Results/fcfs/compiled$run.txt
+    cat Results/compiled.txt >> $rootdir/Results/fcfs/Compiled.txt
 
     #run on ppq
     cd $ppqdir
-    bash rundatasets.sh 1 2 3 4 5 6 
-    cp Results/compiled.txt $rootdir/Results/ppq/compiled$run.txt
+    bash rundatasets.sh 1 2 3 4 5 6 7 
+    cat Results/compiled.txt >> $rootdir/Results/ppq/Compiled.txt
 
 done
 
+# touch Results/Genome_fcfs.txt
+# touch Results/Genome_ppq.txt
+
+# for run in 1 2 3 4 5 6 7 8 9 10; do
+#     #update machines and faults
+#     cp $ftdir/machines50/_f$run.cfg $fcfsdir/faults.cfg && cp $mgendir/machines50/_m$run.txt $fcfsdir/machines.txt
+#     cp $ftdir/machines50/_f$run.cfg  $ppqdir/faults.cfg && cp $mgendir/machines50/_m$run.txt  $ppqdir/machines.txt
+
+#     #run on fcfs
+#     cd $fcfsdir
+#     bash rundatasets.sh 
+#     cat Results/compiled.txt >> $rootdir/Results/Genome_fcfs.txt
+
+#     #run on ppq
+#     cd $ppqdir
+#     bash rundatasets.sh 1 2 3 4 5 6 
+#     cat Results/compiled.txt >> $rootdir/Results/Genome_ppq.txt
+
+# done

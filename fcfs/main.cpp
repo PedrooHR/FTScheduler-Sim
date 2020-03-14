@@ -29,7 +29,6 @@ int main(int argc, char * argv[]){
     Scheduler * scheduler = new Scheduler(eventhandler, mode, value);
     scheduler->config.A = job->MachinesAvailable;
     scheduler->config.B = job->MachinesAvailable;
-
     //First Steps
     ReadFaults(JobString, eventhandler); // Add All Event Faults
     eventhandler->scheduler = scheduler;

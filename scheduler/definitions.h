@@ -20,6 +20,8 @@
 //System definitions
 #define MONITOR_TIME        5*60        // time in seconds to the system monitor sensors and network
 #define FDETECTOR_TIME      1*60        // time in seconds to the system detects if there are machines with fault
+#define TASK_SCALING_SIZE   10           // defines a factor to scale tasks size (hypothesis)
+#define TASK_SCALING_TIME   10           // defines a factor to scale tasks time (hypothesis)
 
 //R threshold definitions
 #define R_MEAN              1           // calculates R threshold by the mean of all tasks' datainputs size
@@ -28,7 +30,7 @@
 #define R_HQUARTILE         4           // calculates R threshold by the third quartile of all tasks' datainputs size
 #define R_ALLCHECKPOINT     5           // Let R threshold be the maximum possible, so everytask will use CP instead of Redundancy
 #define R_ALLREDUNDANCY     6           // Let R threshold be the minimum possible, so everytask will use Redundancy instead of CP
-#define R_USERDEFINED       7           // Let the R threshold value be the one defined in the structure (user defined option)
+#define R_RESTARTING        7           // Let the R threshold value be the one defined in the structure (user defined option)
 
 //Machines Order Definition
 #define MRLP                1           // sort machines by more reliability and then by less processing
@@ -48,7 +50,8 @@
 //Checkpoint related Definitions
 #define NON_CP_TRIES        1           // defines maximum number of reescheduling of non checkpointable tasks
 #define CP_INT_MULTIPLIER   1.00        // defines how much times the calculed interval of checkpoint will be used
-#define MINIMUM_CP_TIME     10          // defines the minimum tima a checkpoint needs to be done
+#define MINIMUM_CP_TIME     10          // defines the minimum time a checkpoint needs to be done
+#define MINIMUN_CP_INTERVAL 10*60        // defines the minimun time between two checkpoints
 #define MAXIMUM_NUMBER_CP   25          // defines a maximum value a task will be checkpointed
 #define HDD_WRITE_SPEED     40          // defines the HDD speed for checkpoints in MB/s, value determined according to AWS 
                                         // general purpose HDD for writing not frequently large files (checkpoints) with less cost

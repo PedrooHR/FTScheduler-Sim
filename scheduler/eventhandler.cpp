@@ -154,7 +154,7 @@ void EventHandler::NextEvent() {
                     task->StartTime = GLOBAL_TIMER;
                 }
 
-                if (task->Checkpointable == true) {
+                if (task->Checkpointable == true && scheduler->RFactor != R_RESTARTING) {
                     machine->TimeBetweenCP = (task->TaskTime / machine->cp) / task->NumberOfCheckpoints;
                     machine->CurrCheckpoint = task->LastValidCP;
                     machine->StartTime = GLOBAL_TIMER;

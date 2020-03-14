@@ -1,7 +1,0 @@
-      1740 ->  Machine_6 Fault 
-      5460 -> Machine_15 Fault 
-     63240 -> Machine_24 Fault 
-     76920 -> Machine_17 Fault 
-28948.000000
-77980
-979520

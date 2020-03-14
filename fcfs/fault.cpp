@@ -2,6 +2,7 @@
 
 void ReadFaults(std::string JobString, EventHandler * eventhandler){
     std::ifstream faultsfile(JobString + "_f.cfg");
+    /* Temporary  std::ifstream faultsfile("faults.cfg"); */
     std::string line;
 
     while (getline(faultsfile, line)){

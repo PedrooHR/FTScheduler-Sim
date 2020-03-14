@@ -1,2 +1,0 @@
-      9760 ->  Machine_0 Fault 
-    336800 -> Machine_22 Fault 

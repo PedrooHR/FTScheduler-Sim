@@ -71,6 +71,7 @@ int Scheduler::assign(Task * NextTask, std::vector <Machine *> machines) {
         //Machine
         machines[i]->status = MACHINE_BUSY;
         machines[i]->TaskExecuting = NextTask;
+        machines[i]->CurrCheckpoint = 0;
         job->MachinesAvailable--;
         
         Event * event = new Event();
@@ -193,7 +194,7 @@ void Scheduler::CheckRedundancy() {
 
     while (job->MachinesAvailable > 0 && stop < RunningTasks.size()){
         if (RunningTasks[i]->Instances.size() < config.Theta){
-            std::vector <Machine *> machines = getNextMachine(MRLP);
+            std::vector <Machine *> machines = getNextMachine(MRMP);
             assign(RunningTasks[i], machines);
         } else {
             stop += 1;
@@ -205,7 +206,7 @@ void Scheduler::CheckRedundancy() {
 int Scheduler::CheckTask(Task * NextTask) {
     if (NextTask->S < config.R){
         NextTask->Checkpointable = true;
-        std::vector <Machine *> machines = getNextMachine(MRLP);
+        std::vector <Machine *> machines = getNextMachine(MRMP);
         assign(NextTask, machines);
     } else {
         NextTask->Checkpointable = false;
@@ -310,7 +311,8 @@ void Scheduler::RCalc(int factor){
             config.R = -1;
             break;
         }
-        case R_USERDEFINED: {
+        case R_RESTARTING: {
+            config.R = INT_MAX;
             break;
         }
     }
@@ -326,10 +328,10 @@ void Scheduler::StartScheduler() {
     RunNextTasks();
 
     //Add The First Monitor Event
-    Event * monitor = new Event();
+    /*Event * monitor = new Event();
     monitor->type = EVENT_SYSMONITOR;
     monitor->time = 0;
-    eventhandler->AddEvent(monitor);
+    eventhandler->AddEvent(monitor);*/
 
     //Add The First Fault Detection Event
     Event * detector = new Event();

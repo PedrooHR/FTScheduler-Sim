@@ -1,7 +1,0 @@
-     21900 ->  Machine_5 Fault 
-     25560 -> Machine_78 Fault 
-     47160 -> Machine_95 Fault 
-     48600 -> Machine_13 Fault 
-7188.310000
-85560
-7555080
