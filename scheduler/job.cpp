@@ -57,6 +57,7 @@ void Job::ReadGraph(std::string JobString){
         task->PendingRed = false;
         task->Checkpointable = false;
         task->LastValidCP = 0;
+        task->CurrNumberOfDependencies = 0;
         task->StartTime = -1;
         task->Tries = 0;
         task->dependencies.clear();
@@ -64,7 +65,7 @@ void Job::ReadGraph(std::string JobString){
         task->Instances.clear();
 
         //Checkpoint info
-        task->TimeToCheckpoint = std::max((task->S / HDD_WRITE_SPEED) * 2, (long int) MINIMUM_CP_TIME); 
+        task->TimeToCheckpoint = std::max((task->S / HDD_WRITE_SPEED), (long int) MINIMUM_CP_TIME); 
         int TimeBetweenCP = std::max(MINIMUN_CP_INTERVAL, task->TimeToCheckpoint);    //How many times task executed for a longer time than the sum of saving and loading a cp
         //FIX ME: Change the event from looking at #CP to look at CP interval
         int number_cp = (int) round((task->TaskTime / TimeBetweenCP) * CP_INT_MULTIPLIER); 

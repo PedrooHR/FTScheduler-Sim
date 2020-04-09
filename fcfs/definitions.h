@@ -22,8 +22,8 @@
 #define CHECKPOINT_MODE     0           // Defines that checkpoint mode is activated
 #define REDUNDANCY_MODE     1           // Defines redundancy redundancy mode is activated
 #define DEFAULT_MODE        2           // No FT Mode activated
-#define TASK_SCALING_TIME   10           // defines a factor to scale tasks time (hypothesis)
-#define TASK_SCALING_SIZE   10           // defines a factor to scale tasks size (hypothesis)
+#define TASK_SCALING_TIME   1           // defines a factor to scale tasks time (hypothesis)
+#define TASK_SCALING_SIZE   1           // defines a factor to scale tasks size (hypothesis)
 
 //Machines Status Definition
 #define MACHINE_DOWN        0           // when a machine fails
@@ -35,6 +35,7 @@
 #define MINIMUM_CP_TIME     10          // defines the minimum tima a checkpoint needs to be done
 #define HDD_WRITE_SPEED     40          // defines the HDD speed for checkpoints in MB/s, value determined according to AWS 
                                         // general purpose HDD for writing not frequently large files (checkpoints) with less cost
+#define DATA_TRANSFER_RATE  640         // data transfer rate https://aws.amazon.com/pt/blogs/aws/the-floodgates-are-open-increased-network-bandwidth-for-ec2-instances/                                        
 
 //Tasks Status Definition
 #define TASK_NOTREADY       0           // when a task still have dependencies
@@ -43,13 +44,17 @@
 #define TASK_COMPLETED      3           // when a task is successfully completed
 
 //Events Definition
-#define EVENT_CHECKPOINT    1           // when a machine will execute a checkpoint 
+#define EVENT_CHECKPOINT    1           // when a machine will start to execute a checkpoint 
 #define EVENT_FINISHTASK    2           // when a machine finishes a task
-#define EVENT_TASKSTART     3           // when a machine will start a task
+#define EVENT_TASKSTART     3           // when a machine will start a task, receving the data
 #define EVENT_FAULT         4           // when a fault occurs
 #define EVENT_NETWORKREPAIR 5           // when the network fault will be recovered (this not affect FCFS Sim)
 #define EVENT_SENSORSREPAIR 6           // when the sensors fault will be recovered (this not affect FCFS Sim)
 #define EVENT_FAULTDETECTOR 7           // periodically event that detects when a fault has occurred
+#define EVENT_STARTCOMPUTE  8           // starting to compute after receiving data
+#define EVENT_SENDDATA      9           // sends final data to head node
+#define EVENT_FINISHCHECKPOINT 10           // finish checkpoint process
+
 
 //Faults Definition 
 #define FAULT_MACHINEDOWN   1           // when a fault occurs and machine goes down
@@ -128,6 +133,9 @@ public:
     long long int StartTime;
     int TimeToComplete; //in second
     Task * TaskExecuting;
+    int TimeBetweenCP;
+    long int CurrCheckpoint;
+    long int ComputedTime;
 
     //Machines Constructors
     Machine();

@@ -7,7 +7,7 @@
 
 using namespace std;
 
-// arguments: 1=weibullscale (mtbf); 2=#machines; 3=#failures, 4=#minimunmachines, 5=#tipos
+// arguments: 1=weibullscale; 2=#machines; 3=#failures, 4=#minimunmachines, 5=#tipos
 
 int main(int argc, char * argv[]){
   
@@ -33,7 +33,7 @@ int main(int argc, char * argv[]){
 
   int currmachines = atoi(argv[2]);
 
-  double first_w = weibull(generator);
+  double first_w = weibull(generator) * 3600.0;
   int first_u = uniform(generator);
   int ftype = types(generator);
 
@@ -51,7 +51,7 @@ int main(int argc, char * argv[]){
       }
     }
 
-    first_w += weibull(generator);
+    first_w += weibull(generator) * 3600.0;
     first_u = uniform(generator);
     ftype = types(generator);  
     while (marked[first_u] == 1)

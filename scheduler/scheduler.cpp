@@ -7,6 +7,7 @@ bool PQCompare::operator() (const Task * left, const Task * right) const {
 Scheduler::Scheduler(int factor, EventHandler * handler) {
     RFactor = factor;
     eventhandler = handler;
+    LastFailure = 0;
 }
 
 int Scheduler::GetDependents(Task * curr_node, int Mark){
@@ -73,7 +74,6 @@ int Scheduler::assign(Task * NextTask, std::vector <Machine *> machines) {
         machines[i]->TaskExecuting = NextTask;
         machines[i]->CurrCheckpoint = 0;
         job->MachinesAvailable--;
-        
         Event * event = new Event();
         event->type = EVENT_TASKSTART;
         event->info = std::to_string(NextTask->id) + " " + machines[i]->id + " ";

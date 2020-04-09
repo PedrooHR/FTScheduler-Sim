@@ -56,6 +56,7 @@ void Job::ReadGraph(std::string JobString){
         task->status = TASK_NOTREADY;
         task->LastValidCP = 0;
         task->StartTime = -1;
+        task->CurrNumberOfDependencies = 0;
         task->dependencies.clear();
         task->dependents.clear();
         task->Instances.clear();

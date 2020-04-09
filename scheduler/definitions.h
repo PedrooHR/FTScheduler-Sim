@@ -20,8 +20,8 @@
 //System definitions
 #define MONITOR_TIME        5*60        // time in seconds to the system monitor sensors and network
 #define FDETECTOR_TIME      1*60        // time in seconds to the system detects if there are machines with fault
-#define TASK_SCALING_SIZE   10           // defines a factor to scale tasks size (hypothesis)
-#define TASK_SCALING_TIME   10           // defines a factor to scale tasks time (hypothesis)
+#define TASK_SCALING_SIZE   1           // defines a factor to scale tasks size (hypothesis)
+#define TASK_SCALING_TIME   1           // defines a factor to scale tasks time (hypothesis)
 
 //R threshold definitions
 #define R_MEAN              1           // calculates R threshold by the mean of all tasks' datainputs size
@@ -51,11 +51,12 @@
 #define NON_CP_TRIES        1           // defines maximum number of reescheduling of non checkpointable tasks
 #define CP_INT_MULTIPLIER   1.00        // defines how much times the calculed interval of checkpoint will be used
 #define MINIMUM_CP_TIME     10          // defines the minimum time a checkpoint needs to be done
-#define MINIMUN_CP_INTERVAL 10*60        // defines the minimun time between two checkpoints
+#define MINIMUN_CP_INTERVAL 10*60       // defines the minimun time between two checkpoints
 #define MAXIMUM_NUMBER_CP   25          // defines a maximum value a task will be checkpointed
 #define HDD_WRITE_SPEED     40          // defines the HDD speed for checkpoints in MB/s, value determined according to AWS 
                                         // general purpose HDD for writing not frequently large files (checkpoints) with less cost
                                         // https://docs.aws.amazon.com/pt_br/AWSEC2/latest/UserGuide/ebs-volume-types.html#EBSVolumeTypes_st1
+#define DATA_TRANSFER_RATE  640         // data transfer rate https://aws.amazon.com/pt/blogs/aws/the-floodgates-are-open-increased-network-bandwidth-for-ec2-instances/                                        
 
 //Tasks Status Definition
 #define TASK_NOTREADY       0           // when a task still have dependencies
@@ -64,14 +65,17 @@
 #define TASK_COMPLETED      3           // when a task is successfully completed
 
 //Events Definition
-#define EVENT_CHECKPOINT    1           // when a machine will execute a checkpoint 
+#define EVENT_CHECKPOINT    1           // when a machine will start to execute a checkpoint 
 #define EVENT_FINISHTASK    2           // when a machine finishes a task
-#define EVENT_TASKSTART     3           // when a machine will start a task
+#define EVENT_TASKSTART     3           // when a machine will start a task, receiving the data
 #define EVENT_FAULT         4           // when a fault occurs
 #define EVENT_NETWORKREPAIR 5           // when the network fault will be recovered
 #define EVENT_SENSORSREPAIR 6           // when the sensors fault will be recovered
 #define EVENT_SYSMONITOR    7           // periodically event to monitor system network and sensors
 #define EVENT_FAULTDETECTOR 8           // periodically event that detects when a fault has occurred
+#define EVENT_SENDDATA      9           // sends final data to head node
+#define EVENT_STARTCOMPUTE  10           // starting to compute after receiving data
+#define EVENT_FINISHCHECKPOINT  11           // finish checkpoint process
 
 //Faults Definition 
 #define FAULT_MACHINEDOWN   1           // when a fault occurs and machine goes down
@@ -80,6 +84,10 @@
 #define NETWORK_REPAIR      247*60      // avg time till repair network, accordingly to article
 #define SENSORS_REPAIR      342*60      // avg time till repair sensors, accordingly to article
 
+//Lazy Checkpoiting definitions
+#define LAZY_MTBF           25200 
+#define LAZY_ERROR          0.5  
+#define LAZY_K_FACTOR       0.6
 
 //////////////////////////////////////////////////////////
 // FOWARD CLASSES DEFINITION 
@@ -138,6 +146,7 @@ public:
     Job * job;
     Config config;
     int RFactor;
+    long int LastFailure;
     EventHandler * eventhandler;
 
     int GetDependents(Task * curr_node, int Mark);
@@ -167,13 +176,14 @@ public:
     long long int StartTime;
     float cs; //Reliability Coefficient
     int TimeToComplete; //in second
-    int CurrCheckpoint;
     int TimeBetweenCP;
     Task * TaskExecuting;
     bool FaultSensors;
     float SensorsDiscount;
     bool FaultNetwork;
     float NetworkDiscount; 
+    long int CurrCheckpoint;
+    long int ComputedTime;
 
     //Machines Constructors
     Machine();

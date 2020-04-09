@@ -48,21 +48,87 @@ void EventHandler::NextEvent() {
             Machine * machine = scheduler->job->getMachineByID(machineid); 
 
             if (machine->status == MACHINE_BUSY && machine->TaskExecuting->id == task->id) {
-                task->LastValidCP++;
-                machine->TimeToComplete += task->TimeToCheckpoint; // Add the time to make the CP to the total execution time
-                
+                //first step to start a CP is to define what was calculated up to this point
+                int ComputedTime = GLOBAL_TIMER - machine->StartTime; //actual time - last time machine started the computing
+                machine->ComputedTime += ComputedTime; // add the last computed time to the total computed time
+                machine->TimeToComplete -= ComputedTime; // discount computed time from the time remaining
+
+                //there are two options, machine will do or not do the CP
                 Event * event = new Event();
-                if ((machine->TimeToComplete - (GLOBAL_TIMER + machine->StartTime)) > scheduler->CPRed){ // lets count the CP interval only after finishing this CP
+                event->type = EVENT_FINISHCHECKPOINT;
+                event->info = std::to_string(task->id) + " " + machineid + " ";
+                event->time = GLOBAL_TIMER + task->TimeToCheckpoint; // if doing the CP, wait for the time to CP
+                AddEvent(event);
+                
+                logging << "event=CHECKPOINT id=" << taskid << " machine=" << machineid << " status=DONECP_" << machine->ComputedTime * machine->cp << " time=" << GLOBAL_TIMER << "\n";
+            }
+            break;
+        }
+        case EVENT_FINISHCHECKPOINT: {
+            //Define the new GlobalTime
+            GLOBAL_TIMER = CurrentEvent->time;
+
+            std::string eventinfo = CurrentEvent->info;
+            int prev = 0; int curr = eventinfo.find(' ');
+            int taskid = std::stoi(eventinfo.substr(prev, curr - prev));
+            prev = curr + 1; curr = eventinfo.find(' ', prev);
+            std::string machineid = eventinfo.substr(prev, curr - prev);
+            Task * task = scheduler->job->getTaskByID(taskid); 
+            Machine * machine = scheduler->job->getMachineByID(machineid); 
+
+            if (machine->status == MACHINE_BUSY && machine->TaskExecuting->id == task->id) {
+                //mark as the last valid cp
+                task->LastValidCP = machine->ComputedTime * machine->cp;
+
+                machine->CurrCheckpoint = machine->ComputedTime * machine->cp;
+
+                // start computing again
+                machine->StartTime = GLOBAL_TIMER;
+                
+                // se if it will finish the task or make a CP
+                if (scheduler->CPRed < machine->TimeToComplete){
+                    Event * event = new Event();
                     event->type = EVENT_CHECKPOINT;
                     event->info = std::to_string(task->id) + " " + machine->id + " ";
-                    event->time = task->TimeToCheckpoint + GLOBAL_TIMER + scheduler->CPRed;
+                    event->time = machine->StartTime + scheduler->CPRed;   
+                    AddEvent(event);
                 } else {
-                    event->type = EVENT_FINISHTASK;
+                    Event * event = new Event();
+                    event->type = EVENT_SENDDATA;
                     event->info = std::to_string(task->id) + " " + machine->id + " ";
                     event->time = machine->StartTime + machine->TimeToComplete;
+                    AddEvent(event);
                 }
+               
+                logging << "event=FINISHCHECKPOINT id=" << taskid << " machine=" << machineid << " time=" << GLOBAL_TIMER << "\n";
+            }
+            break;
+        }
+        case EVENT_SENDDATA: {
+            //Define the new GlobalTime
+            GLOBAL_TIMER = CurrentEvent->time;
+
+            std::string eventinfo = CurrentEvent->info;
+            int prev = 0; int curr = eventinfo.find(' ');
+            int taskid = std::stoi(eventinfo.substr(prev, curr - prev));
+            prev = curr + 1; curr = eventinfo.find(' ', prev);
+            std::string machineid = eventinfo.substr(prev, curr - prev);
+            Task * task = scheduler->job->getTaskByID(taskid); 
+            Machine * machine = scheduler->job->getMachineByID(machineid); 
+
+            if (machine->status == MACHINE_BUSY && machine->TaskExecuting->id == task->id) {
+                //at this point we will finish the task and send the data to head node
+               
+                //calculate transfer rate
+                int TransferTime = task->S / DATA_TRANSFER_RATE;
+
+                Event * event = new Event();
+                event->type = EVENT_FINISHTASK;
+                event->info = std::to_string(task->id) + " " + machineid + " ";
+                event->time = GLOBAL_TIMER + TransferTime;
                 AddEvent(event);
-                logging << "event=CHECKPOINT id=" << taskid << " machine=" << machineid << " status=DONECP_" << task->LastValidCP << " time=" << GLOBAL_TIMER << "\n";
+
+                logging << "event=SENDDATA " << "id=" << taskid << " machine=" << machineid << " time=" << GLOBAL_TIMER << "\n";
             }
             break;
         }
@@ -89,7 +155,8 @@ void EventHandler::NextEvent() {
                 }
 
                 scheduler->job->TasksToComplete--;
-                std::cout << "Tasks to go: " << scheduler->job->TasksToComplete << "\n";
+                if (scheduler->job->TasksToComplete % 5000 == 0)
+                    std::cout << "Tasks to go: " << scheduler->job->TasksToComplete << "\n";
                 //Release the Machines;
                 for (int i = 0; i < task->Instances.size(); i++){
                     task->Instances[i]->status = MACHINE_AVAILABLE;
@@ -105,10 +172,59 @@ void EventHandler::NextEvent() {
                         scheduler->ReadyQueue.push(task->dependents[i]);
                     }
                 }
-                                
+
                 scheduler->RunNextTasks(); 
                                
                 logging << "event=FINISHTASK " << "id=" << taskid << " machine=" << machineid << " time=" << GLOBAL_TIMER << " Tasks to GO: "<< scheduler->job->TasksToComplete << "\n";
+            }
+            break;
+        }
+        case EVENT_STARTCOMPUTE: {
+            //Define the new GlobalTime
+            GLOBAL_TIMER = CurrentEvent->time;
+
+            std::string eventinfo = CurrentEvent->info;
+            int prev = 0; int curr = eventinfo.find(' ');
+            int taskid = std::stoi(eventinfo.substr(prev, curr - prev));
+            prev = curr + 1; curr = eventinfo.find(' ', prev);
+            std::string machineid = eventinfo.substr(prev, curr - prev);
+            Task * task = scheduler->job->getTaskByID(taskid); 
+            Machine * machine = scheduler->job->getMachineByID(machineid); 
+
+            if (machine->status == MACHINE_BUSY && machine->TaskExecuting->id == task->id){
+                machine->StartTime = GLOBAL_TIMER; // start the computing 
+                
+                //check how much time task have left (less than task time if it was checkpointed before)
+                int TimeLeft = task->TaskTime - task->LastValidCP; 
+                machine->TimeToComplete = TimeLeft / machine->cp; // define the estimated compute time for completion, based on machine computing coeff
+
+                if (scheduler->Mode == CHECKPOINT_MODE) { //if doing checkpoint 
+                    machine->ComputedTime = task->LastValidCP / machine->cp; // mark as computed time the checkpointed part of task (if it exists)
+                    machine->TimeToComplete -= machine->ComputedTime; //discount if the task is already did some computation
+
+                    Event * event = new Event();
+                    if (scheduler->CPRed < machine->TimeToComplete){
+                        Event * event = new Event();
+                        event->type = EVENT_CHECKPOINT;
+                        event->info = std::to_string(task->id) + " " + machine->id + " ";
+                        event->time = machine->StartTime + scheduler->CPRed;   
+                        AddEvent(event);
+                    } else {
+                        Event * event = new Event();
+                        event->type = EVENT_SENDDATA;
+                        event->info = std::to_string(task->id) + " " + machine->id + " ";
+                        event->time = machine->StartTime + machine->TimeToComplete;
+                        AddEvent(event);
+                    }
+                } else { //if redundancy or restarting
+                    Event * event = new Event();
+                    event->type = EVENT_SENDDATA;
+                    event->info = std::to_string(task->id) + " " + machineid + " ";
+                    event->time = machine->StartTime + machine->TimeToComplete;
+                    AddEvent(event);
+                }
+
+                logging << "event=STARTCOMPUTE " << "id=" << taskid << " machine=" << machineid << " time=" << GLOBAL_TIMER << "\n";
             }
             break;
         }
@@ -130,29 +246,14 @@ void EventHandler::NextEvent() {
                     task->StartTime = GLOBAL_TIMER;
                 }
 
-                if (scheduler->Mode == CHECKPOINT_MODE) {
-                    machine->StartTime = GLOBAL_TIMER;
-                    machine->TimeToComplete = (task->TaskTime / machine->cp) - (scheduler->CPRed * task->LastValidCP); // Although machines are different, this is a good approximation to define time left
-                    Event * event = new Event();
-                    if (machine->TimeToComplete > scheduler->CPRed){
-                        event->type = EVENT_CHECKPOINT;
-                        event->info = std::to_string(task->id) + " " + machine->id + " ";
-                        event->time = machine->StartTime + scheduler->CPRed;   
-                    } else {
-                        event->type = EVENT_FINISHTASK;
-                        event->info = std::to_string(task->id) + " " + machine->id + " ";
-                        event->time = machine->StartTime + machine->TimeToComplete;
-                    }
-                    AddEvent(event);
-                } else {
-                    machine->StartTime = GLOBAL_TIMER; 
-                    machine->TimeToComplete = task->TaskTime / machine->cp;
-                    Event * event = new Event();
-                    event->type = EVENT_FINISHTASK;
-                    event->info = std::to_string(task->id) + " " + machineid + " ";
-                    event->time = machine->StartTime + machine->TimeToComplete;
-                    AddEvent(event);
-                }
+                // Calculate the time the task will be receiving the data
+                int TransferTime = task->S / DATA_TRANSFER_RATE;
+
+                Event * event = new Event();                
+                event->type = EVENT_STARTCOMPUTE;
+                event->info = std::to_string(task->id) + " " + machine->id + " ";
+                event->time = GLOBAL_TIMER + TransferTime;
+                AddEvent(event);
 
                 logging << "event=TASKSTART " << "id=" << taskid << " machine=" << machineid << " time=" << GLOBAL_TIMER << "\n";
             }
